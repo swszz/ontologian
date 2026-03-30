@@ -3,3 +3,7 @@ domains:
     description: "이커머스 도메인 예시"
     path: ecommerce/ontology.yaml
     last_modified: 2026-03-30
+  - name: settlement
+    description: "정산 도메인 — 가맹점 거래 집계, 정산 생성·승인·지급"
+    path: settlement/ontology.yaml
+    last_modified: 2026-03-30

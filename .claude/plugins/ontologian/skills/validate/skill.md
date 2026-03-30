@@ -83,7 +83,8 @@ domain_data[domain_name] = {
 | 필드 | 규칙 |
 |------|------|
 | `name` | 필수 |
-| `type` | 필수. 허용값: `string`, `int`, `float`, `boolean`, `date`, `datetime` |
+| `type` | 필수. 허용값: `string`, `int`, `float`, `boolean`, `date`, `datetime`. `integer`는 `int`의 별칭으로 허용 (오류로 처리하지 않음) |
+| `computed` | 선택. `true`이면 `expression` 필드의 존재 여부를 확인한다. 없으면 경고(warning, 오류는 아님): `computed 속성 '<name>'에 expression이 없습니다.` |
 
 #### Link Type 검증
 
@@ -106,6 +107,20 @@ domain_data[domain_name] = {
 | `description` | 필수. 없거나 빈 문자열이면 오류 |
 | `trigger` | 필수. 허용값: `object_created`, `object_updated`, `object_deleted`, `manual` |
 | `target` | 필수 |
+
+**`trigger_condition` 검증 (선택적 필드):**
+
+`trigger_condition` 필드가 존재하면:
+- `trigger`가 `object_updated`인 경우에만 허용한다. 다른 trigger 값과 함께 존재하면 오류:
+  ```
+  [<domain_name>] Action Type '<name>'
+    → trigger_condition: trigger가 '<trigger_value>'일 때 사용할 수 없습니다. object_updated일 때만 허용됩니다.
+  ```
+- 필수 하위 필드: `field`, `from`, `to` 모두 존재해야 한다. 하나라도 없으면 오류:
+  ```
+  [<domain_name>] Action Type '<name>'
+    → trigger_condition.<field_name>: 필수 필드가 없습니다. (field, from, to 모두 필요)
+  ```
 
 `parameters` 배열이 있으면 각 parameter도 검증한다:
 
@@ -170,6 +185,15 @@ domain_data[domain_name] = {
 ```
 [<domain_name>] Action Type '<action_name>'
   → target: '<value>'가 Object Type으로 존재하지 않습니다.
+```
+
+`trigger_condition`이 존재하고 `field` 값이 있으면, `target` Object Type의 `properties`에 해당 `field`가 존재하는지 확인한다.
+
+존재하지 않으면 오류 추가:
+
+```
+[<domain_name>] Action Type '<action_name>'
+  → trigger_condition.field: '<field_value>'가 target '<target_name>'의 property로 존재하지 않습니다.
 ```
 
 ### Step 6: 중복 이름 검증

@@ -155,6 +155,11 @@ Read: .ontology/domains/_index.yaml
    ```
 
    - `computed: true`는 `y` 입력 시에만 필드를 포함한다.
+   - `computed: true` 선택 시 expression을 추가로 질문한다:
+     ```
+     계산식을 입력하세요 (예: "gross_amount - fee", 모르면 빈칸 엔터로 건너뜀):
+     ```
+     입력값이 있으면 `expression` 필드에 저장한다.
    - Property를 하나 이상 수집한 후 이름 입력에서 빈칸 엔터가 오면 수집 종료.
 
 수집된 데이터를 `new_entry` 객체로 메모리에 저장:
@@ -166,6 +171,7 @@ properties:
     type: <type>
     primary: true           # primary=true인 경우만 포함
     computed: true          # computed=true인 경우만 포함
+    expression: "<식>"      # computed=true이고 expression이 입력된 경우만 포함
 ```
 
 ---
@@ -259,6 +265,19 @@ description: "<설명>"      # 설명이 있는 경우만 포함
    번호를 입력하세요:
    ```
 
+   `object_updated` 선택 시 trigger_condition을 추가로 질문한다:
+   ```
+   어떤 필드의 변화 시 트리거됩니까? (예: status, 모르면 빈칸 엔터로 건너뜀):
+   ```
+   필드명이 입력되면:
+   ```
+   변화 전 값 (from, 예: calculated, 모르면 빈칸 엔터로 건너뜀):
+   ```
+   ```
+   변화 후 값 (to, 예: approved, 모르면 빈칸 엔터로 건너뜀):
+   ```
+   field, from, to 중 하나라도 입력되었으면 `trigger_condition: {field, from, to}` 으로 저장한다.
+
 5. **Parameters 반복 수집**: 아래 프롬프트를 반복한다.
 
    ```
@@ -295,6 +314,10 @@ name: <snake_case 이름>
 description: "<설명>"      # 설명이 있는 경우만 포함
 target: <ObjectType>
 trigger: <trigger>
+trigger_condition:          # trigger=object_updated이고 하나 이상 입력된 경우만 포함
+  field: <field_name>
+  from: <value>
+  to: <value>
 parameters:                 # 파라미터가 하나 이상인 경우만 포함
   - name: <param_name>
     type: <type>

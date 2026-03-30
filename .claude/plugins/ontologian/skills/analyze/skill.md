@@ -133,9 +133,13 @@ uncertain_items: []        # confidence: low 또는 모호한 항목들
 - `name`: PascalCase로 변환 (예: "사용자" → `User`, "장바구니" → `Cart`)
 - `description`: 요구사항에서 파악한 역할 설명
 - `properties`: 요구사항에서 언급되거나 해당 엔티티에 자연스럽게 귀속되는 속성 목록
-  - 각 속성의 `type`은 의미에서 추론 (이메일 → `string`, 금액 → `float`, 날짜 → `datetime` 등)
+  - 각 속성의 `type`은 의미에서 추론. **허용 타입**: `string`, `int`, `float`, `boolean`, `date`, `datetime` (이메일 → `string`, 횟수 → `int`, 금액 → `float`, 날짜 → `datetime`)
   - 식별자 역할의 속성은 `primary: true` 표시
-  - 계산/파생 값은 `computed: true` 표시
+  - **상태(status) 속성 감지**: 속성명이 `status`, `state`, `type`처럼 열거형 값을 가질 가능성이 있을 때, 요구사항에서 언급된 허용값을 `description`에 "허용값: ..." 형태로 명시한다. 불명확하면 `uncertain_items`에 `missing_enum_values` 유형으로 추가한다.
+  - 계산/파생 값은 `computed: true` 표시, 동시에 `expression` 추론
+    - 요구사항에서 계산식이 명확하면 그대로 사용 (예: `"gross_amount - fee"`)
+    - 불명확하면 `confidence: low`로 표시하고 `uncertain_items`에 `missing_computed_expression` 유형으로 추가
+  - **FK 속성 추가 금지**: Object Type의 `properties` 배열에서, 다른 Object Type과의 관계를 표현하기 위해 추가하는 외래키 속성(예: `merchant_id`, `order_id`)은 포함하지 않는다. 해당 관계는 4-B에서 Link Type으로만 표현한다. Action Type의 `parameters`에는 이 규칙이 적용되지 않는다.
 - `confidence`: `high` (명확한 엔티티) / `low` (모호하거나 다른 엔티티의 속성일 수 있음)
 
 추출된 후보를 `candidate_objects`에 추가한다.
@@ -150,12 +154,20 @@ uncertain_items: []        # confidence: low 또는 모호한 항목들
 - 이미 도출된 Object Type 후보 간 관계뿐 아니라, 새 후보와 기존 Object Type 간 관계도 포함
 
 각 후보에 대해 추론:
-- `name`: snake_case 동사형 (예: `places`, `contains`, `belongs_to`)
+- `name`: snake_case 동사형 (예: `places`, `contains`, `aggregates`)
 - `from` / `to`: 관계의 방향 (주어 → 목적어)
+  - **방향 일관성 원칙**: 가능하면 "소유자/부모 → 피소유자/자식" 방향으로 통일한다.
+    - `one_to_many`: 부모 → 자식 (예: `Merchant → Transaction`)
+    - `many_to_one`이 도출되고 부모-자식 관계가 명확한 경우에만 방향을 뒤집어 `one_to_many`로 재표현을 검토한다.
+      (예: "거래가 정산에 소속" → `Settlement → Transaction (one_to_many, aggregates)` 가 더 자연스러울 수 있음)
+    - `one_to_one` 관계는 방향 뒤집기 검토 대상에서 제외한다. 의미적 참조 방향을 우선한다.
+  - 동일한 관계를 양방향으로 중복 생성하지 않는다.
+  - **파생 가능한 링크 주의**: A → B → C 경로가 이미 존재할 때 A → C 직접 링크를 추가하면 중복이 된다. 이 경우 `uncertain_items`에 `concept_split` 유형으로 추가하고 직접 링크의 필요성을 사용자에게 확인한다.
 - `cardinality`: 아래 규칙으로 추론
   - "한 명의 사용자가 여러 주문을" → `one_to_many`
   - "한 주문에 여러 상품, 한 상품이 여러 주문에" → `many_to_many`
   - "주문 하나에 배송 하나" → `one_to_one`
+  - "여러 거래가 하나의 정산에 귀속" → `one_to_many` (방향을 뒤집어 정산→거래로 표현)
   - 요구사항에서 불명확하면 `confidence: low`로 표시
 - `confidence`: `high` / `low`
 
@@ -180,6 +192,14 @@ uncertain_items: []        # confidence: low 또는 모호한 항목들
   - 삭제 시 → `object_deleted`
   - **"확정되면", "완료되면", "승인되면", "취소되면" 등 상태 변화 표현** → `object_updated`로 추론하되, 반드시 `ambiguous_trigger_condition`으로 `uncertain_items`에 추가 (어떤 필드의 어떤 값 변화인지 사용자 확인 필요)
   - 조건 불명확하거나 수동 실행 → `manual`
+- `trigger_condition`: `trigger`가 `object_updated`이고 조건이 명확할 때 아래 구조로 추론한다:
+  ```
+  trigger_condition:
+    field: <status 등 변화 감지 필드명>
+    from: <변화 전 값>
+    to: <변화 후 값>
+  ```
+  field/from/to 중 하나라도 불명확하면 `ambiguous_trigger_condition`으로 `uncertain_items`에 추가한다.
 - `parameters`: 행위에 필요한 입력값 (요구사항에서 언급된 경우)
 - `confidence`: `high` / `low`
 
@@ -191,8 +211,13 @@ uncertain_items: []        # confidence: low 또는 모호한 항목들
 
 유사도 판단 기준 (아래 중 하나라도 해당하면 `conflict` 표시):
 - **동일 이름**: 대소문자 무시 비교에서 완전 일치
-- **공통 부분 문자열**: 두 이름 중 긴 쪽 길이의 70% 이상이 겹침 (예: `Customer` ↔ `User`: 낮음, `OrderItem` ↔ `OrderProduct`: 높음)
-- **의미 유사**: 같은 개념을 다른 언어로 표현 (예: `User` ↔ `Member`, `Cart` ↔ `Basket`)
+- **접두어/접미어 포함**: 한쪽 이름이 다른 쪽의 접두어 또는 접미어를 완전히 포함
+  (예: `Settlement` ⊂ `SettlementItem` → 충돌 후보, `Order` ⊂ `OrderItem` → 충돌 후보)
+- **PascalCase 토큰 공유**: 두 이름을 PascalCase 단어 단위로 분리했을 때 공유 토큰이 있는 경우
+  (예: `OrderItem` vs `OrderProduct` → "Order" 공유 → 충돌 후보)
+  단, 기술적 접미어(Service, Repository, Controller, Handler, Factory, Manager, Util, Helper)는 비교 대상에서 제외한다.
+- **의미 유사**: 같은 개념을 다른 언어/용어로 표현
+  (예: `User` ↔ `Member`, `Cart` ↔ `Basket`, `가맹점` → `Merchant` ↔ 기존 `Seller`)
 
 충돌 후보에는 `conflict: { domain: <domain_name>, existing_name: <name>, reason: "동일/유사/의미 유사" }` 표시.
 
@@ -208,6 +233,7 @@ uncertain_items: []        # confidence: low 또는 모호한 항목들
 | `ambiguous_cardinality` | Link Type의 카디널리티를 요구사항에서 확정할 수 없는 경우 |
 | `action_target_unclear` | Action Type의 대상 Object Type이 여러 후보 중 하나인 경우 |
 | `ambiguous_trigger_condition` | Action의 트리거가 상태 변경 조건인 경우 (어떤 필드의 어떤 값 변화인지 불명확) |
+| `missing_computed_expression` | `computed: true` 속성의 계산식을 요구사항에서 추론할 수 없는 경우 |
 
 `confidence: low`로 표시된 모든 후보는 자동으로 `uncertain_items`에 포함된다.
 
@@ -405,6 +431,34 @@ Step 4 완료 후 `candidate_objects`, `candidate_links`, `candidate_actions`가
 ```
 
 선택값을 해당 Action Type 후보의 `trigger`에 반영한다.
+
+#### 6-G: missing_enum_values — 상태값 허용 목록 불명확
+
+```
+[N/N] '<ObjectType>.<property_name>' 속성의 허용값이 명확하지 않습니다.
+
+  (A) 허용값을 입력 — 쉼표로 구분 (예: pending, active, closed)
+  (B) 허용값 없이 string으로 유지
+  (S) 건너뜀 — 미결 항목으로 보류
+
+선택 (A/B/S):
+```
+
+`(A)` 선택 시 입력된 허용값을 해당 속성의 `description`에 "허용값: ..." 형태로 저장한다.
+
+#### 6-H: missing_computed_expression — 계산식 불명확
+
+```
+[N/N] '<ObjectType>.<property_name>'은 computed 속성입니다. 계산식을 알고 있나요?
+
+  (A) 계산식을 입력 (예: gross_amount - fee, SUM(items.amount))
+  (B) 계산식 없이 computed로 유지
+  (S) 건너뜀 — 미결 항목으로 보류
+
+선택 (A/B/S):
+```
+
+`(A)` 선택 시 입력된 계산식을 해당 속성의 `expression` 필드에 저장한다.
 
 #### 인터랙션 완료
 

@@ -120,8 +120,9 @@ action_types: [...]    # 없으면 빈 배열
 
 **플래그(flags) 표기:**
 - `primary: true` → `(PK)` 추가
-- `computed: true` → `(computed)` 추가
-- 두 가지 모두인 경우 → `(PK, computed)` 추가
+- `computed: true`이고 `expression`이 없으면 → `(computed)` 추가
+- `computed: true`이고 `expression`이 있으면 → `(computed: <expression>)` 추가
+- `primary: true`와 `computed: true` 모두인 경우 → `(PK, computed)` 추가
 - 플래그 없으면 괄호 생략
 
 **트리 기호:**
@@ -171,6 +172,13 @@ ACTIONS
 
   <action_name>
    └─ 트리거: <trigger> → [<target>]
+```
+
+`trigger_condition`이 있으면 조건을 인라인으로 표시한다:
+
+```
+  <action_name>
+   └─ 트리거: object_updated (<field>: <from>→<to>) → [<target>]
 ```
 
 여러 Action이 있는 경우 각 Action 사이에 빈 줄을 넣는다.

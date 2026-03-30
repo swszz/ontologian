@@ -24,6 +24,16 @@ Glob: pattern=".ontology/config.yaml"
 ```
 온톨로지 저장소가 초기화되지 않았습니다.
 시작하려면 `/ontologian:init` 커맨드를 실행하세요.
+
+사용 가능한 커맨드:
+  /ontologian:init      — 온톨로지 저장소 초기화
+  /ontologian:add       — 새 타입 추가
+  /ontologian:analyze   — 비즈니스 요구사항 분석 → 온톨로지 도출
+  /ontologian:search    — 키워드 검색
+  /ontologian:validate  — 무결성 검증
+  /ontologian:sync      — 글로벌 싱크
+  /ontologian:migrate   — 타입별 파일 분리
+  /ontologian:visualize — 관계 다이어그램
 ```
 
 ### Step 2: config.yaml 읽기
@@ -54,7 +64,7 @@ Read 툴로 `.ontology/domains/_index.yaml`을 읽는다.
 **마이그레이션 여부 판단:**
 
 - `path` 필드가 있으면 → 마이그레이션 **전**: `.ontology/domains/<path>` 파일 하나를 Read로 읽는다.
-- `paths` 필드가 있으면 → 마이그레이션 **후**: `paths.object_types`, `paths.link_types`, `paths.action_types` 세 파일을 각각 Read로 읽는다.
+- `paths` 필드가 있으면 → 마이그레이션 **후**: `paths.object_types`, `paths.link_types`, `paths.action_types` 세 파일을 각각 Read로 읽는다. 각 파일의 실제 경로는 `.ontology/domains/<paths.object_types>` 형태로 조합한다(예: `paths.object_types` 값이 `user/object_types.yaml`이면 `.ontology/domains/user/object_types.yaml`).
 
 **집계 항목 (도메인별):**
 
@@ -75,7 +85,7 @@ Read 툴로 `.ontology/domains/_index.yaml`을 읽는다.
 ## Ontologian — 온톨로지 현황
 
 설정:
-  글로벌 싱크: <global_sync>
+  글로벌 싱크: <global_sync>   ※ ask=변경 시 확인 요청 / auto=자동 싱크 / off=싱크 비활성화
   글로벌 경로: <global_path>
 
 도메인 목록:
@@ -86,6 +96,7 @@ Read 툴로 `.ontology/domains/_index.yaml`을 읽는다.
 └────────────────┴──────────┴──────────┴──────────┴──────────────────┘
 
 총 도메인: <N> | 총 Object Types: <N> | 총 Link Types: <N> | 총 Action Types: <N>
+관계 상세: /ontologian:visualize | 전체 검증: /ontologian:validate
 
 사용 가능한 커맨드:
   /ontologian:add       — 새 타입 추가

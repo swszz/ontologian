@@ -23,10 +23,9 @@ Glob: pattern=".ontology/config.yaml"
 
 ```
 온톨로지 저장소가 초기화되지 않았습니다.
-시작하려면 `/ontologian:init` 커맨드를 실행하세요.
+시작하려면 `/ontologian:add` 또는 `/ontologian:analyze`를 실행하세요. (저장소 자동 초기화 포함)
 
 사용 가능한 커맨드:
-  /ontologian:init      — 온톨로지 저장소 초기화
   /ontologian:add       — 새 타입 추가
   /ontologian:analyze   — 비즈니스 요구사항 분석 → 온톨로지 도출
   /ontologian:search    — 키워드 검색

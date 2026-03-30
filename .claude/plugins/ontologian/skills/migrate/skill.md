@@ -294,3 +294,5 @@ Glob: pattern=".ontology/config.yaml"
 - **오늘 날짜 형식 오류** → `last_modified` 및 로그 파일명의 날짜는 반드시 `YYYY-MM-DD` 형식이어야 한다.
 - **원본 파일 자동 삭제 금지** → 기존 `ontology.yaml`은 사용자가 직접 삭제하도록 안내만 한다. 스킬이 자동으로 삭제하지 않는다.
 - **Edit의 `old_string`에 `last_modified` 포함 금지** → `last_modified` 날짜는 파일마다 다르므로 `old_string`에 포함하면 날짜 불일치로 매칭에 실패한다. `path` 줄(`  path: <target_domain.path>`)만 교체 대상으로 한정한다.
+- **`.ontology/config.yaml`은 있지만 `_index.yaml`이 없는 경우** → '초기화되지 않았습니다' 메시지를 출력하고 종료 (add 또는 analyze 스킬로 도메인을 먼저 추가해야 함)
+- **Edit의 `old_string` 들여쓰기 불일치** → `old_string`은 실제 파일의 들여쓰기(2칸 공백)와 정확히 일치해야 함 — 탭/4칸 등 다른 형식이면 매칭 실패

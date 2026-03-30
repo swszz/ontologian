@@ -1,0 +1,27 @@
+# <type>(<scope>): <subject>
+#
+# Types:
+#   feat     - A new feature
+#   fix      - A bug fix
+#   docs     - Documentation only changes
+#   style    - Formatting, missing semi colons, etc; no logic change
+#   refactor - Code change that neither fixes a bug nor adds a feature
+#   test     - Adding missing tests or correcting existing tests
+#   chore    - Changes to the build process or auxiliary tools
+#   perf     - A code change that improves performance
+#   ci       - Changes to CI configuration files and scripts
+#   revert   - Reverts a previous commit
+#
+# Scope: optional, the module or area affected (e.g. auth, user, order)
+#
+# Subject: imperative, present tense; no period at the end; max 72 chars
+#
+# -----------------------------------------------------------------------
+# Body (optional): explain WHAT and WHY, not HOW
+# Wrap at 72 characters
+#
+# -----------------------------------------------------------------------
+# Footer (optional):
+#   Closes #<issue>
+#   Refs #<issue>
+#   BREAKING CHANGE: <description>

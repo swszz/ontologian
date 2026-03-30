@@ -106,6 +106,7 @@ action_types:
 |---|---|
 | `/ontologian` | 현재 도메인 목록 + 상태 요약 출력 |
 | `/ontologian add` | 대화형으로 새 타입 추가 |
+| `/ontologian analyze` | 비즈니스 요구사항 분석 → 온톨로지 자동 도출 및 추가 |
 | `/ontologian search <keyword>` | 키워드로 온톨로지 검색 |
 | `/ontologian validate` | 전체 YAML 무결성 검증 |
 | `/ontologian sync` | 로컬 → 글로벌 싱크 수동 실행 |
@@ -120,6 +121,8 @@ action_types:
     └── ontologian/
         └── skills/
             ├── add/
+            │   └── skill.md
+            ├── analyze/
             │   └── skill.md
             ├── search/
             │   └── skill.md

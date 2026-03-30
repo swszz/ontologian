@@ -922,6 +922,279 @@ git commit -m "feat(ontologian): add example ecommerce ontology"
 
 ---
 
+## Task 9: Analyze 스킬 (`/ontologian:analyze`)
+
+**Files:**
+- Create: `.claude/plugins/ontologian/skills/analyze/skill.md`
+
+- [ ] **Step 1: 스킬 파일 생성**
+
+`.claude/plugins/ontologian/skills/analyze/skill.md` 를 아래 내용으로 작성한다:
+
+```markdown
+---
+name: analyze
+description: 자유형식 비즈니스 요구사항을 분석해 Object/Link/Action Type을 도출하고, 사용자와 인터랙션으로 정보를 완성한 뒤 온톨로지에 추가한다. /ontologian:analyze 로 호출.
+---
+
+# Ontologian — Analyze
+
+비즈니스 요구사항 텍스트를 입력받아, 온톨로지 구조를 도출하고 사용자와 대화를 통해 정보를 완성한 뒤 저장한다.
+
+이 스킬은 `/ontologian:add` 와 달리 사용자가 구조를 미리 알 필요 없다. Claude가 요구사항을 분석해서 후보 구조를 먼저 제안한다.
+
+## 절차
+
+### 0. 초기화 체크
+
+Glob으로 `.ontology/config.yaml` 존재 확인.
+없으면:
+> ".ontology/ 디렉토리가 없습니다. 지금 초기화할까요? (y/n)"
+
+승인 시 아래 파일 생성:
+
+**.ontology/config.yaml:**
+```yaml
+version: 1
+global_sync: ask
+global_path: ~/.ontologian
+```
+
+**.ontology/domains/_index.yaml:**
+```yaml
+domains: []
+```
+
+거절 시 종료.
+
+### 1. 요구사항 수집
+
+사용자가 인자 없이 호출했으면:
+> "분석할 비즈니스 요구사항을 자유롭게 설명해주세요.
+> 예: '고객이 상품을 장바구니에 담고 결제할 수 있어야 한다. 주문 완료 시 이메일 알림을 보낸다.'"
+
+인자로 텍스트를 직접 넘겼으면 그대로 사용.
+
+### 2. 1차 분석 — 후보 도출
+
+요구사항에서 아래 패턴으로 후보를 추출한다:
+
+**Object Type 후보:**
+- 명사 / 명사구 중 실세계 엔티티로 볼 수 있는 것
+- "~이/가", "~을/를" 의 주체·대상이 되는 개념
+- 예: "고객", "상품", "장바구니", "주문"
+
+**Link Type 후보:**
+- 두 명사 사이의 동사 관계
+- 예: "고객이 상품을 담는다" → Customer -[adds_to_cart]→ Product
+- 카디널리티는 문맥에서 유추 (복수형, "여러", "하나의" 등)
+
+**Action Type 후보:**
+- "~한다", "~를 보낸다", "~를 처리한다" 등 실행 가능한 동작
+- 예: "이메일 알림을 보낸다" → send_order_email (trigger: object_created, target: Order)
+
+### 3. 분석 결과 발표
+
+도출한 후보를 아래 형식으로 보여준다:
+
+```
+## 요구사항 분석 결과
+
+입력: "고객이 상품을 장바구니에 담고 결제할 수 있어야 한다. 주문 완료 시 이메일 알림을 보낸다."
+
+### 도출된 Object Types (후보)
+  ✦ Customer   — 서비스를 이용하는 고객
+  ✦ Product    — 판매 상품
+  ✦ Cart       — 결제 전 임시 담기 공간
+  ✦ Order      — 완료된 주문
+
+### 도출된 Link Types (후보)
+  ✦ Customer -[adds_to_cart]→ Product  (many_to_many)
+     근거: "고객이 상품을 장바구니에 담고"
+  ✦ Customer -[places]→ Order          (one_to_many)
+     근거: "결제할 수 있어야 한다"
+  ✦ Order -[contains]→ Product         (many_to_many)
+     근거: 주문은 여러 상품을 포함함 (묵시적)
+
+### 도출된 Action Types (후보)
+  ✦ send_order_confirmation_email
+     트리거: object_created | 대상: Order
+     근거: "주문 완료 시 이메일 알림을 보낸다"
+
+### 불확실한 항목 (결정 필요)
+  ? Cart: 장바구니를 별도 Object Type으로 모델링할지,
+          Order의 상태(status: cart/confirmed)로 처리할지 결정 필요
+  ? Customer vs User: 기존 온톨로지에 User가 있다면 동일 개념일 수 있음
+```
+
+### 4. 결정이 필요한 항목 인터랙션
+
+불확실한 항목을 **한 번에 하나씩** 질의한다.
+
+**예시 — 개념 통합 여부:**
+> "장바구니(Cart)를 별도 Object Type으로 모델링할까요,
+> 아니면 Order의 status 필드(cart / confirmed / shipped)로 처리할까요?
+>
+> (A) Cart를 별도 Object Type으로 — 장바구니 단계의 데이터를 독립적으로 관리
+> (B) Order.status 로 처리 — 단순한 구조, 상태 전이만 표현"
+
+**예시 — 기존 개념과 중복 여부:**
+기존 온톨로지에 유사한 Object Type이 있으면:
+> "기존 온톨로지에 'User' 가 있습니다. 'Customer' 와 동일한 개념인가요?
+>
+> (A) 동일 — User 에 customer_grade 등 속성만 추가
+> (B) 별개 — Customer 를 새 Object Type으로 추가 (User와 link)"
+
+**예시 — 누락된 필수 속성:**
+> "'Product' 에 어떤 식별자(primary key)를 사용할까요?
+> (A) product_id (string, 자동 생성)
+> (B) sku (string, 외부 코드 체계 사용)
+> (C) 직접 입력"
+
+**예시 — 카디널리티 확인:**
+> "'Order -[contains]→ Product' 관계의 카디널리티를 확인합니다.
+> 한 주문에 동일 상품이 여러 개 담길 수 있나요? (수량 개념)
+>
+> (A) many_to_many — 주문에 여러 상품, 상품은 여러 주문에 포함
+> (B) Order 와 Product 사이에 OrderItem 중간 Object Type 추가 권장
+>     (수량, 단가 등 관계 속성 저장 가능)"
+
+모든 결정이 완료될 때까지 반복한다.
+
+### 5. 기존 온톨로지와 충돌 검사
+
+`.ontology/domains/_index.yaml` 읽기. 기존 도메인이 있으면 각 ontology.yaml 읽기.
+
+도출된 Object Type 이름과 기존 이름을 비교:
+- 동일 이름 존재 → Step 4에서 이미 처리
+- 유사 이름(예: User/Customer, Item/Product) → 사용자에게 통합 여부 확인
+
+### 6. 도메인 배치 결정
+
+> "아래 항목들을 어느 도메인에 추가할까요?
+>
+> 기존 도메인: ecommerce, hr
+> 신규 도메인 이름을 입력하거나 기존 도메인을 선택하세요:"
+
+도출된 타입이 여러 도메인에 걸쳐 있다고 판단되면:
+> "일부 항목은 별도 도메인으로 분리하는 것이 적절할 수 있습니다.
+> - Customer, Order, Cart, Product → ecommerce 도메인
+> - (없음)
+> 이 배치로 진행할까요, 아니면 직접 조정하시겠습니까?"
+
+### 7. 최종 추가 내용 미리보기
+
+결정된 모든 내용을 YAML 형태로 보여준다:
+
+```yaml
+# 추가될 내용 — .ontology/domains/ecommerce/ontology.yaml
+
+object_types:
+  - name: Customer
+    description: "서비스를 이용하는 고객"
+    properties:
+      - name: customer_id
+        type: string
+        primary: true
+      - name: email
+        type: string
+      - name: customer_grade
+        type: string
+
+  - name: Product
+    description: "판매 상품"
+    properties:
+      - name: sku
+        type: string
+        primary: true
+      - name: name
+        type: string
+      - name: price
+        type: float
+
+  - name: Order
+    description: "완료된 주문"
+    properties:
+      - name: order_id
+        type: string
+        primary: true
+      - name: status
+        type: string
+      - name: created_at
+        type: datetime
+
+  - name: OrderItem
+    description: "주문 내 상품 항목 (수량, 단가 포함)"
+    properties:
+      - name: order_item_id
+        type: string
+        primary: true
+      - name: quantity
+        type: int
+      - name: unit_price
+        type: float
+
+link_types:
+  - name: places
+    from: Customer
+    to: Order
+    cardinality: one_to_many
+    description: "고객이 주문을 생성"
+
+  - name: includes
+    from: Order
+    to: OrderItem
+    cardinality: one_to_many
+    description: "주문이 주문항목을 포함"
+
+  - name: references
+    from: OrderItem
+    to: Product
+    cardinality: many_to_one
+    description: "주문항목이 상품을 참조"
+
+action_types:
+  - name: send_order_confirmation_email
+    description: "주문 완료 시 확인 이메일 발송"
+    trigger: object_created
+    target: Order
+```
+
+> "위 내용을 추가할까요? (y / n / 수정)"
+- `수정` 입력 시: "어떤 부분을 수정할까요?" → 해당 항목 재질의
+
+### 8. YAML 파일 업데이트
+
+승인 시 `add` 스킬의 Step 5 로직과 동일하게 실행:
+- 신규 도메인이면 ontology.yaml + _index.yaml 신규 생성
+- 기존 도메인이면 해당 파일에 항목 추가 (Edit 툴)
+- `_index.yaml` `last_modified` 갱신
+
+### 9. 글로벌 싱크 체크
+
+`.ontology/config.yaml` 의 `global_sync` 확인:
+- `ask` → "글로벌 저장소(`~/.ontologian`)에도 반영할까요? (y/n)"
+- `auto` → 자동 싱크
+- `off` → 스킵
+
+완료 메시지:
+```
+✓ 분석 완료 — ecommerce 도메인에 추가됨
+  Object Types: Customer, Product, Order, OrderItem (4개)
+  Link Types: places, includes, references (3개)
+  Action Types: send_order_confirmation_email (1개)
+```
+```
+
+- [ ] **Step 2: 커밋**
+
+```bash
+git add .claude/plugins/ontologian/skills/analyze/skill.md
+git commit -m "feat(ontologian): add 'analyze' skill for requirements-driven ontology creation"
+```
+
+---
+
 ## Self-Review
 
 ### 스펙 커버리지 체크
@@ -929,13 +1202,14 @@ git commit -m "feat(ontologian): add example ecommerce ontology"
 | 스펙 요구사항 | 커버하는 Task |
 |---|---|
 | YAML 파일 기반 로컬 저장소 | Task 8 (예시 구조 생성) |
-| 명시적 Skill 호출 (MCP 없음) | Task 1~7 (모든 스킬) |
-| 쓰기 승인 플로우 | Task 2 (add), Task 6 (migrate) |
-| 프로젝트 로컬 필수 | Task 2 (초기화 로직) |
-| 전역 저장소 선택 | Task 5 (sync), Task 2 (add 후 싱크) |
-| global_sync: ask/auto/off | Task 2, Task 6 |
+| 명시적 Skill 호출 (MCP 없음) | Task 1~9 (모든 스킬) |
+| 쓰기 승인 플로우 | Task 2 (add), Task 6 (migrate), Task 9 (analyze) |
+| 프로젝트 로컬 필수 | Task 2, Task 9 (초기화 로직) |
+| 전역 저장소 선택 | Task 5 (sync), Task 2, Task 9 (add/analyze 후 싱크) |
+| global_sync: ask/auto/off | Task 2, Task 6, Task 9 |
 | /ontologian overview | Task 1 |
 | /ontologian:add | Task 2 |
+| /ontologian:analyze | Task 9 |
 | /ontologian:search | Task 3 |
 | /ontologian:validate | Task 4 |
 | /ontologian:sync | Task 5 |
@@ -954,3 +1228,4 @@ git commit -m "feat(ontologian): add example ecommerce ontology"
 - `ontology.yaml` 구조: 모든 스킬에서 동일한 필드명 사용
 - 마이그레이션된 도메인 읽기: Task 3(search), Task 4(validate), Task 7(visualize) 모두 분리 파일 처리 포함
 - `_index.yaml` 의 `paths` 구조(migrate 후): Task 3, 4, 7에서 처리
+- Task 9(analyze) 의 YAML 업데이트 로직은 Task 2(add) 의 Step 5와 동일한 구조를 참조하여 일관성 유지

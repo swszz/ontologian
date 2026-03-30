@@ -1,0 +1,70 @@
+domain: ecommerce
+version: 1
+description: "이커머스 도메인 온톨로지 예시"
+
+object_types:
+  - name: User
+    description: "서비스 사용자"
+    properties:
+      - name: user_id
+        type: string
+        primary: true
+      - name: email
+        type: string
+      - name: churn_score
+        type: float
+        computed: true
+
+  - name: Order
+    description: "주문"
+    properties:
+      - name: order_id
+        type: string
+        primary: true
+      - name: status
+        type: string
+      - name: created_at
+        type: datetime
+
+  - name: Product
+    description: "상품"
+    properties:
+      - name: sku
+        type: string
+        primary: true
+      - name: name
+        type: string
+      - name: price
+        type: float
+
+link_types:
+  - name: places
+    from: User
+    to: Order
+    cardinality: one_to_many
+    description: "사용자가 주문을 생성"
+
+  - name: contains
+    from: Order
+    to: Product
+    cardinality: many_to_many
+    description: "주문이 상품을 포함"
+
+action_types:
+  - name: send_welcome_email
+    description: "신규 사용자에게 환영 메일 발송"
+    trigger: object_created
+    target: User
+    parameters:
+      - name: recipient_email
+        type: string
+        required: true
+
+  - name: notify_order_created
+    description: "주문 생성 알림 발송"
+    trigger: object_created
+    target: Order
+    parameters:
+      - name: order_id
+        type: string
+        required: true

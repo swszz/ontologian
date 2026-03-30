@@ -53,6 +53,12 @@ Read 툴로 `_index.yaml`을 읽는다.
 Read: .ontology/domains/_index.yaml
 ```
 
+`domains` 배열이 비어있으면 아래 메시지를 출력하고 종료한다.
+
+```
+등록된 도메인이 없습니다.
+```
+
 `domains` 배열을 순회하며 각 도메인의 파일을 읽는다.
 
 #### path/paths 분기
@@ -80,7 +86,7 @@ Read: .ontology/domains/_index.yaml
 |------|-----------|
 | Object Type | `name`, `description`, `properties[].name` |
 | Link Type | `name`, `description`, `from`, `to` |
-| Action Type | `name`, `description`, `target` |
+| Action Type | `name`, `description`, `target`, `parameters[].name` |
 
 매칭된 항목을 도메인별로 수집한다.
 
@@ -120,6 +126,8 @@ Read: .ontology/domains/_index.yaml
 ...
 
 총 <N>건 (Object: <N>, Link: <N>, Action: <N>)
+
+(일부 도메인 로드 실패: <이름1>, <이름2>)  ← 로드 실패한 도메인이 있을 때만 표시
 ```
 
 **필드 출력 규칙:**
@@ -156,5 +164,5 @@ Read: .ontology/domains/_index.yaml
 - **대소문자 구분 검색** → 키워드 검색은 반드시 대소문자 무시(case-insensitive)로 수행한다. `User`로 검색하면 `user`, `USER`도 매칭되어야 한다.
 - **매칭 기준 혼동** → 항목 자체가 매칭되면 해당 항목 전체를 출력한다. 특정 필드만 매칭되어도 항목 전체 핵심 필드를 요약 출력한다.
 - **빈 배열 처리 누락** → `object_types`, `link_types`, `action_types`가 `[]`이거나 키 자체가 없는 경우 해당 배열을 건너뛴다.
-- **도메인 파일 읽기 실패 시 전체 중단** → 특정 도메인 파일을 읽지 못해도 나머지 도메인 검색은 계속 수행한다. 실패한 도메인은 결과에서 생략하고 주의 메시지를 표시하지 않는다.
+- **도메인 파일 읽기 실패 시 전체 중단** → 특정 도메인 파일을 읽지 못해도 나머지 도메인 검색은 계속 수행한다. 실패한 도메인은 결과에서 생략하고, 결과 하단에 `(일부 도메인 로드 실패: <이름>)` 경고를 표시한다. 오류를 침묵 처리하지 않는다.
 - **총계 누락** → 결과 출력 마지막에 반드시 총 건수와 타입별 건수를 출력한다.

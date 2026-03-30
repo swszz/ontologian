@@ -16,17 +16,16 @@ description: Use when the user runs /ontologian:validate or wants to check ontol
 
 ### Step 1: 초기화 체크
 
-Glob 툴로 `.ontology/config.yaml`을 검색한다.
+Glob 툴로 `.ontology/domains/_index.yaml`을 검색한다.
 
 ```
-Glob: pattern=".ontology/config.yaml"
+Glob: pattern=".ontology/domains/_index.yaml"
 ```
 
 파일이 없으면 아래 메시지를 출력하고 **즉시 종료**한다.
 
 ```
-온톨로지 저장소가 초기화되지 않았습니다.
-시작하려면 `/ontologian:init` 커맨드를 실행하세요.
+온톨로지가 초기화되지 않았습니다.
 ```
 
 ### Step 2: `_index.yaml` 읽기
@@ -115,6 +114,8 @@ domain_data[domain_name] = {
 | `name` | 필수 |
 | `type` | 필수. 허용값: `string`, `int`, `float`, `boolean`, `date`, `datetime` |
 
+**parameter에 `name`이 없는 경우:** 스키마 오류로 기록하되 해당 parameter의 나머지 필드(`type` 등) 검증은 건너뛴다.
+
 **오류 메시지 형식:**
 
 ```
@@ -136,11 +137,15 @@ domain_data[domain_name] = {
 
 [ecommerce] Action Type 'send_welcome_email'
   → trigger: 허용되지 않는 값 'on_create'. (허용값: object_created, object_updated, object_deleted, manual)
+
+[ecommerce] Action Type 'send_email' > parameter 'index 0': name 필드 없음
 ```
 
 ### Step 5: 참조 무결성 검증
 
 각 도메인에서 해당 도메인의 `object_types` 이름 목록(`object_names`)을 먼저 수집한다.
+
+**크로스 도메인 참조 정책:** `from`, `to`, `target` 필드는 동일 도메인 내 Object Type만 허용한다. 다른 도메인의 타입을 참조하면 오류로 처리한다.
 
 #### Link Type 참조 검증
 

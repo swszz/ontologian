@@ -116,6 +116,12 @@ Read: .ontology/domains/_index.yaml
    Object Type 이름을 입력하세요 (PascalCase, 예: Product):
    ```
 
+   입력값이 PascalCase(첫 글자 대문자, 이후 영문/숫자, 공백·언더스코어·하이픈 없음)가 아니면 즉시 재질의한다:
+   ```
+   이름은 PascalCase여야 합니다(예: Product). 다시 입력하세요:
+   ```
+   올바른 값이 입력될 때까지 반복한다.
+
 2. **설명**:
    ```
    설명을 입력하세요 (선택, 빈칸 엔터로 건너뜀):
@@ -170,10 +176,16 @@ properties:
 
 현재 도메인에서 알려진 Object Type 이름 목록을 Step 6 전에 미리 참조용으로 보여준다 (기존 도메인인 경우, 신규 도메인이면 생략).
 
-1. **이름** (동사형, camelCase 또는 snake_case):
+1. **이름** (소문자 단어, 언더스코어 허용):
    ```
    Link Type 이름을 입력하세요 (동사형, 예: places, contains):
    ```
+
+   입력값이 소문자 단어(언더스코어 허용, 숫자 가능, 대문자·공백·하이픈 불가)가 아니면 즉시 재질의한다:
+   ```
+   이름은 소문자와 언더스코어만 허용됩니다(예: places, has_order). 다시 입력하세요:
+   ```
+   올바른 값이 입력될 때까지 반복한다.
 
 2. **from** (출발 Object Type):
    ```
@@ -191,7 +203,9 @@ properties:
      1. one_to_one
      2. one_to_many
      3. many_to_many
+     4. many_to_one
    번호를 입력하세요:
+   ※ many_to_one은 from/to를 반전한 one_to_many로도 표현 가능
    ```
 
 5. **설명**:
@@ -219,12 +233,23 @@ description: "<설명>"      # 설명이 있는 경우만 포함
    Action Type 이름을 입력하세요 (snake_case, 예: send_welcome_email):
    ```
 
+   입력값이 snake_case(소문자와 언더스코어만, 숫자 허용, 대문자·공백·하이픈 불가)가 아니면 즉시 재질의한다:
+   ```
+   이름은 snake_case여야 합니다(예: send_email). 다시 입력하세요:
+   ```
+   올바른 값이 입력될 때까지 반복한다.
+
 2. **설명**:
    ```
    설명을 입력하세요 (선택, 빈칸 엔터로 건너뜀):
    ```
 
-3. **trigger**:
+3. **target** (대상 Object Type):
+   ```
+   대상 Object Type을 입력하세요 (예: User):
+   ```
+
+4. **trigger**:
    ```
    트리거 조건을 선택하세요:
      1. object_created
@@ -234,17 +259,46 @@ description: "<설명>"      # 설명이 있는 경우만 포함
    번호를 입력하세요:
    ```
 
-4. **target** (대상 Object Type):
+5. **Parameters 반복 수집**: 아래 프롬프트를 반복한다.
+
    ```
-   대상 Object Type을 입력하세요 (예: User):
+   파라미터를 추가할까요? (y/n):
    ```
+
+   `y`면 순서대로 질문한다:
+
+   ```
+   파라미터 이름을 입력하세요:
+   ```
+
+   ```
+   타입을 선택하세요:
+     1. string
+     2. int
+     3. float
+     4. boolean
+     5. date
+     6. datetime
+   번호를 입력하세요:
+   ```
+
+   ```
+   필수 파라미터인가요? (y/n, 기본값 y):
+   ```
+
+   파라미터를 저장한 뒤 다시 "파라미터를 추가할까요?" 프롬프트를 반복한다.
+   `n`이면 수집 종료.
 
 수집된 데이터를 `new_entry` 객체로 메모리에 저장:
 ```yaml
 name: <snake_case 이름>
 description: "<설명>"      # 설명이 있는 경우만 포함
-trigger: <trigger>
 target: <ObjectType>
+trigger: <trigger>
+parameters:                 # 파라미터가 하나 이상인 경우만 포함
+  - name: <param_name>
+    type: <type>
+    required: true          # required=false인 경우만 명시, true는 기본값이므로 생략 가능
 ```
 
 ---
@@ -281,8 +335,11 @@ target: <ObjectType>
 # 추가될 내용 (domain: ecommerce, action_types)
 - name: send_welcome_email
   description: "신규 사용자에게 환영 메일 발송"
-  trigger: object_created
   target: User
+  trigger: object_created
+  parameters:
+    - name: email_template
+      type: string
 ```
 
 그 다음 입력을 요청한다.
@@ -295,11 +352,23 @@ target: <ObjectType>
   ```
   취소되었습니다.
   ```
-- **`수정`** → 수정할 항목을 묻는다:
+- **`수정`** → 수정 가능한 항목 목록을 번호로 출력하고 선택하게 한다:
   ```
-  어떤 항목을 수정하시겠어요? (항목 이름 입력, 예: description, cardinality):
+  수정할 항목을 선택하세요:
+    1. <field_1> (현재: <value_1>)
+    2. <field_2> (현재: <value_2>)
+    ...
+  번호를 입력하세요:
   ```
-  해당 항목만 재질의한 뒤 Step 6으로 돌아간다.
+  예를 들어 Object Type의 경우:
+  ```
+  수정할 항목을 선택하세요:
+    1. name (현재: User)
+    2. description (현재: 서비스 사용자)
+    3. properties
+  번호를 입력하세요:
+  ```
+  선택된 항목만 재질의한 뒤 Step 6으로 돌아간다.
 - **`y`** → Step 7로 진행.
 
 ---
@@ -422,13 +491,15 @@ Step 1에서 읽은 `global_sync` 값에 따라 동작한다.
 ### Step 9: 완료 메시지
 
 ```
-✓ [<domain_name>] 에 <entry_name> (<type_label>) 추가 완료
+✓ [<domain_name>] 에 <entry_name> (<type_label>) 추가 완료 → .ontology/domains/<domain_name>/ontology.yaml
 ```
 
 `<type_label>` 매핑:
 - Object Type → `Object Type`
 - Link Type → `Link Type`
 - Action Type → `Action Type`
+
+파일 경로는 실제 수정된 파일의 경로를 출력한다 (마이그레이션 후 도메인의 경우 해당 타입 파일 경로).
 
 ---
 
@@ -441,3 +512,4 @@ Step 1에서 읽은 `global_sync` 값에 따라 동작한다.
 - **설명이 없을 때 `description: ""` 작성** → 빈 설명도 필드를 생략한다.
 - **_index.yaml `last_modified` 갱신 누락** → YAML 파일 수정 후 반드시 갱신한다.
 - **신규 도메인 path 형식 오류** → `_index.yaml`의 `path` 값은 `<domain_name>/ontology.yaml` 형태(앞에 `domains/` 없음)로 저장한다.
+- **이름 형식 검증 누락** → Object Type은 PascalCase, Action Type은 snake_case, Link Type은 소문자+언더스코어를 반드시 검증하고, 위반 시 재질의한다. 형식이 올바를 때까지 다음 질문으로 넘어가지 않는다.

@@ -11,7 +11,7 @@ Palantir 온톨로지 개념(Object Type, Property, Link Type, Action Type)을 �
 
 **핵심 원칙:**
 - YAML 파일 기반 로컬 저장소 (git 친화적, 외부 의존성 없음)
-- MCP 서버로 Claude 자율 조회 + Skill로 사용자 명시 호출
+- Skill(슬래시 커맨드)로 사용자가 명시적으로 호출 (MCP 없음)
 - 쓰기 작업은 항상 사용자 승인 후 실행
 - 프로젝트 로컬 필수, 전역 저장소 선택
 
@@ -48,7 +48,6 @@ Palantir 온톨로지 개념(Object Type, Property, Link Type, Action Type)을 �
 version: 1
 global_sync: ask          # ask | auto | off
 global_path: ~/.ontologian
-auto_search: true         # 대화 중 자동 ontologian_search 호출 여부
 ```
 
 ### `domains/_index.yaml`
@@ -101,25 +100,7 @@ action_types:
 
 ---
 
-## 2. MCP 서버 툴 목록
-
-MCP 서버 이름: `ontologian-mcp`
-
-| 툴명 | 설명 | 승인 필요 |
-|---|---|---|
-| `ontologian_search` | 키워드/타입으로 온톨로지 검색 | 아니오 (자동 호출) |
-| `ontologian_get` | 특정 도메인/오브젝트 상세 조회 | 아니오 |
-| `ontologian_add` | 새 Object/Link/Action 타입 추가 | 예 |
-| `ontologian_update` | 기존 타입 수정 | 예 |
-| `ontologian_delete` | 타입 삭제 | 예 |
-| `ontologian_validate` | YAML 스키마 + 관계 무결성 검증 | 아니오 |
-| `ontologian_list_domains` | 전체 도메인 목록 조회 | 아니오 |
-| `ontologian_sync_global` | 로컬 → 글로벌 싱크 실행 | 예 |
-| `ontologian_migrate` | 단일 파일 → 타입별 분리 마이그레이션 | 예 |
-
----
-
-## 3. Skill (슬래시 커맨드)
+## 2. Skill (슬래시 커맨드)
 
 | 커맨드 | 동작 |
 |---|---|
@@ -137,48 +118,41 @@ MCP 서버 이름: `ontologian-mcp`
 .claude/
 └── plugins/
     └── ontologian/
-        ├── skills/
-        │   ├── add/
-        │   │   └── skill.md
-        │   ├── search/
-        │   │   └── skill.md
-        │   ├── validate/
-        │   │   └── skill.md
-        │   ├── sync/
-        │   │   └── skill.md
-        │   ├── migrate/
-        │   │   └── skill.md
-        │   └── visualize/
-        │       └── skill.md
-        └── mcp/
-            ├── server.ts       # MCP 서버 진입점
-            ├── storage.ts      # YAML 읽기/쓰기
-            ├── validator.ts    # 스키마 + 관계 검증
-            └── sync.ts         # 글로벌 싱크 로직
+        └── skills/
+            ├── add/
+            │   └── skill.md
+            ├── search/
+            │   └── skill.md
+            ├── validate/
+            │   └── skill.md
+            ├── sync/
+            │   └── skill.md
+            ├── migrate/
+            │   └── skill.md
+            └── visualize/
+                └── skill.md
 ```
 
 ---
 
 ## 4. 데이터 플로우
 
-### 읽기 (자동)
+### 읽기
 
 ```
-대화 시작 / 사용자 메시지 입력
-    → Claude가 맥락 파악
-    → ontologian_search 자동 호출 (config.auto_search: true 시)
-    → 관련 Object/Link/Action 타입 컨텍스트로 로드
-    → 응답에 온톨로지 지식 반영
+사용자가 /ontologian search or /ontologian 호출
+    → Skill이 .ontology/domains/_index.yaml 읽기
+    → 해당 도메인 ontology.yaml 읽기
+    → 결과 출력
 ```
 
 ### 쓰기 (승인 필요)
 
 ```
-Claude가 새 개념 감지 or 사용자가 /ontologian add 호출
-    → Claude가 추가/수정안 제안 (diff 형태로 표시)
+사용자가 /ontologian add or /ontologian update 호출
+    → Claude가 추가/수정안 제안 (YAML diff 형태로 표시)
     → 사용자 승인
-    → ontologian_add / ontologian_update 실행
-    → YAML 파일 업데이트
+    → ontology.yaml + _index.yaml 업데이트
     → 변경 감지 → 글로벌 싱크 플로우 진입
 ```
 
@@ -215,9 +189,6 @@ domains/ecommerce/
 
 ## 6. 기술 스택
 
-- **언어:** TypeScript (Node.js)
-- **MCP SDK:** `@modelcontextprotocol/sdk`
-- **YAML 파싱:** `js-yaml`
-- **스키마 검증:** `zod`
-- **빌드:** `tsup` (단일 번들 출력)
-- **최소 Node 버전:** 18+
+- **Skill 구현:** Markdown (Claude가 직접 해석, 별도 빌드 없음)
+- **YAML 조작:** Claude의 기본 툴 (Read, Write, Edit, Grep, Glob)
+- **외부 의존성:** 없음

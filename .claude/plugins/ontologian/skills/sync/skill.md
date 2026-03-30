@@ -58,7 +58,7 @@ Read: .ontology/domains/_index.yaml
 각 도메인 항목에서 파일 목록을 수집한다. 항목마다 마이그레이션 여부를 판단한다.
 
 - `path` 필드가 있으면 → 파일 1개: `<path>` (예: `ecommerce/ontology.yaml`)
-- `paths` 필드가 있으면 → `paths.object_types`, `paths.link_types`, `paths.action_types` 값을 각각 파일 목록에 추가 (예: `ecommerce/object_types.yaml`)
+- `paths` 필드가 있으면 → `paths.object_types`, `paths.link_types`, `paths.action_types` 값을 각각 파일 목록에 추가 (예: `ecommerce/object_types.yaml`). 키가 없는 항목은 건너뛴다.
 
 수집된 파일 목록을 `sync_files` 배열로 메모리에 저장한다.
 `_index.yaml` 자체도 싱크 대상에 포함한다.
@@ -72,8 +72,11 @@ Read: .ontology/domains/_index.yaml
 ```
 ## 싱크 미리보기
 로컬 → 글로벌 (<global_path>)
-  ecommerce/ontology.yaml → <global_path>/domains/ecommerce/ontology.yaml
-  domains/_index.yaml     → <global_path>/domains/_index.yaml
+  ecommerce/ontology.yaml     → <global_path>/domains/ecommerce/ontology.yaml
+  ecommerce/object_types.yaml → <global_path>/domains/ecommerce/object_types.yaml
+  ecommerce/link_types.yaml   → <global_path>/domains/ecommerce/link_types.yaml
+  ecommerce/action_types.yaml → <global_path>/domains/ecommerce/action_types.yaml
+  domains/_index.yaml         → <global_path>/domains/_index.yaml
 총 N개 파일
 
 진행할까요? (y/n)

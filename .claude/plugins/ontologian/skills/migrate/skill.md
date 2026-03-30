@@ -188,16 +188,13 @@ Read 툴로 `.ontology/domains/_index.yaml`의 현재 내용을 다시 읽는다
 
 Edit 툴로 해당 도메인 항목의 `path` 필드를 `paths` 블록으로 교체한다.
 
-**변경 전:**
+**변경 전 (`old_string` — `path` 줄만 포함):**
 ```yaml
-- name: <domain_name>
   path: <target_domain.path>
-  last_modified: <기존_날짜>
 ```
 
-**변경 후:**
+**변경 후 (`new_string`):**
 ```yaml
-- name: <domain_name>
   paths:
     object_types: <target_dir>/object_types.yaml
     link_types: <target_dir>/link_types.yaml
@@ -296,3 +293,4 @@ Glob: pattern=".ontology/config.yaml"
 - **로그 디렉토리 미생성** → `.ontology/migrations/` 디렉토리가 없어도 Write 툴은 파일 경로 전체를 기준으로 생성하므로 별도 mkdir 없이 Write 툴로 직접 파일을 생성한다.
 - **오늘 날짜 형식 오류** → `last_modified` 및 로그 파일명의 날짜는 반드시 `YYYY-MM-DD` 형식이어야 한다.
 - **원본 파일 자동 삭제 금지** → 기존 `ontology.yaml`은 사용자가 직접 삭제하도록 안내만 한다. 스킬이 자동으로 삭제하지 않는다.
+- **Edit의 `old_string`에 `last_modified` 포함 금지** → `last_modified` 날짜는 파일마다 다르므로 `old_string`에 포함하면 날짜 불일치로 매칭에 실패한다. `path` 줄(`  path: <target_domain.path>`)만 교체 대상으로 한정한다.

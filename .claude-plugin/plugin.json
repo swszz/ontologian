@@ -1,0 +1,12 @@
+{
+  "name": "ontologian",
+  "description": "Palantir ontology concepts (Object Type, Link Type, Action Type) for knowledge management in Claude Code",
+  "version": "1.0.0",
+  "author": {
+    "name": "swszz"
+  },
+  "homepage": "https://github.com/swszz/ontologian",
+  "repository": "https://github.com/swszz/ontologian",
+  "license": "MIT",
+  "keywords": ["ontology", "knowledge-management", "productivity", "yaml"]
+}

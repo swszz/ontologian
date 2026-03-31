@@ -1,0 +1,12 @@
+{
+  "name": "ontologian",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Palantir ontology concepts for knowledge management in Claude Code",
+  "author": "swszz",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/swszz/ontologian.git"
+  }
+}

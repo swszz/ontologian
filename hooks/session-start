@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# SessionStart hook for ontologian plugin
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+escape_for_json() {
+    local s="$1"
+    s="${s//\\/\\\\}"
+    s="${s//\"/\\\"}"
+    s="${s//$'\n'/\\n}"
+    s="${s//$'\r'/\\r}"
+    s="${s//$'\t'/\\t}"
+    printf '%s' "$s"
+}
+
+context="ontologian plugin is active. Use these slash commands to manage your ontology:\\n- /ontologian — 도메인 목록 및 상태 요약\\n- /ontologian:add — 새 타입 추가\\n- /ontologian:analyze — 요구사항 분석 → 온톨로지 도출\\n- /ontologian:search — 키워드 검색\\n- /ontologian:validate — 무결성 검증\\n- /ontologian:sync — 글로벌 싱크\\n- /ontologian:migrate — 타입별 파일 분리\\n- /ontologian:visualize — 관계 다이어그램 출력"
+
+if [ -n "${CURSOR_PLUGIN_ROOT:-}" ]; then
+  printf '{\n  "additional_context": "%s"\n}\n' "$context"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ]; then
+  printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "SessionStart",\n    "additionalContext": "%s"\n  }\n}\n' "$context"
+else
+  printf '{\n  "additional_context": "%s"\n}\n' "$context"
+fi
+
+exit 0

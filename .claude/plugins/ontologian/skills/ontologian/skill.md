@@ -13,13 +13,7 @@ description: Use when the user runs /ontologian or wants to see the overall stat
 
 ### Step 1: `.ontology/` 존재 여부 확인
 
-Glob 툴로 `.ontology/config.yaml` 파일을 검색한다.
-
-```
-Glob: pattern=".ontology/config.yaml"
-```
-
-파일이 존재하지 않으면 아래 메시지를 출력하고 **즉시 종료**한다.
+Glob `.ontology/config.yaml` → 없으면 아래 메시지 출력 후 **즉시 종료**:
 
 ```
 온톨로지 저장소가 초기화되지 않았습니다.
@@ -115,6 +109,6 @@ Read 툴로 `.ontology/domains/_index.yaml`을 읽는다.
 
 ## Common Mistakes
 
-- `_index.yaml`의 `path`와 `paths` 필드를 혼동해 마이그레이션된 도메인을 잘못 읽는 경우 → Step 4의 분기 조건을 반드시 확인한다.
-- `object_types` 키가 없는 파일에서 배열 길이를 집계하려다 오류가 나는 경우 → 키 부재 시 0으로 처리한다.
-- 합계를 테이블 안에 넣는 경우 → 합계는 테이블 **바깥** 별도 줄로 출력한다.
+- **도메인 파일 읽기 오류** → Step 4의 path/paths 분기 조건을 정확히 확인한다. `paths` 도메인은 3개 파일을 각각 Read한다.
+- **배열 키 부재** → `object_types` 키가 없는 파일에서 집계 시 0으로 처리한다.
+- **합계를 테이블 안에 출력** → 합계는 테이블 **바깥** 별도 줄로 출력한다.

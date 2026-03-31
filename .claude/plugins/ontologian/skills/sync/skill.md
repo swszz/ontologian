@@ -16,17 +16,7 @@ description: Use when the user runs /ontologian:sync or wants to manually sync l
 
 ### Step 1: 초기화 체크
 
-Glob 툴로 `.ontology/config.yaml`을 검색한다.
-
-```
-Glob: pattern=".ontology/config.yaml"
-```
-
-파일이 없으면 아래 메시지를 출력하고 **즉시 종료**한다.
-
-```
-온톨로지가 초기화되지 않았습니다. (.ontology/config.yaml 없음)
-```
+Glob `.ontology/config.yaml` → 없으면 `"온톨로지가 초기화되지 않았습니다. (.ontology/config.yaml 없음)"` 출력 후 **즉시 종료**.
 
 ### Step 2: config.yaml 읽기
 
@@ -161,9 +151,8 @@ Write 툴로 `<global_path>/domains/_index.yaml`에 쓴다.
 
 ## Common Mistakes
 
-- **`path`와 `paths` 혼동** → `path`(단수) = 마이그레이션 전 단일 파일, `paths`(복수) = 마이그레이션 후 타입별 파일. Step 3 분기 조건을 정확히 확인한다.
-- **`_index.yaml` 누락** → 도메인 파일 외에 `_index.yaml`도 반드시 싱크 대상에 포함해야 한다.
-- **`global_path` 기본값 누락** → `config.yaml`에 `global_path`가 없으면 `~/.ontologian`을 사용한다.
-- **파일 실패 시 전체 중단** → 개별 파일 복사 실패는 경고만 출력하고 나머지 파일 복사를 계속한다.
-- **미리보기 파일 수 오류** → 총 N개는 도메인 파일 수 + `_index.yaml` 1개다. `_index.yaml`을 빠뜨리지 않는다.
-- **글로벌 config.yaml 덮어쓰기** → 이미 존재하는 경우 생성하지 않는다. 존재 여부를 Glob으로 먼저 확인한다.
+- **`_index.yaml` 누락** → 도메인 파일 외에 `_index.yaml`도 반드시 싱크 대상에 포함한다.
+- **`global_path` 기본값** → `config.yaml`에 없으면 `~/.ontologian`을 사용한다.
+- **파일 실패 시 전체 중단** → 개별 파일 복사 실패는 경고만 출력하고 나머지 계속 진행한다.
+- **미리보기 파일 수** → 총 N개는 도메인 파일 수 + `_index.yaml` 1개.
+- **글로벌 config.yaml 덮어쓰기** → 이미 존재하면 생성하지 않는다. Glob으로 먼저 확인.

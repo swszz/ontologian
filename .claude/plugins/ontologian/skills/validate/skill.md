@@ -16,17 +16,7 @@ description: Use when the user runs /ontologian:validate or wants to check ontol
 
 ### Step 1: 초기화 체크
 
-Glob 툴로 `.ontology/domains/_index.yaml`을 검색한다.
-
-```
-Glob: pattern=".ontology/domains/_index.yaml"
-```
-
-파일이 없으면 아래 메시지를 출력하고 **즉시 종료**한다.
-
-```
-온톨로지가 초기화되지 않았습니다.
-```
+Glob `.ontology/domains/_index.yaml` → 없으면 `"온톨로지가 초기화되지 않았습니다."` 출력 후 **즉시 종료**.
 
 ### Step 2: `_index.yaml` 읽기
 
@@ -240,9 +230,7 @@ domain_data[domain_name] = {
 
 ## Common Mistakes
 
-- **`path`와 `paths` 혼동** → `path`(단수) = 마이그레이션 전 단일 파일, `paths`(복수) = 마이그레이션 후 타입별 파일. Step 3 분기 조건을 정확히 확인한다.
-- **배열 키 부재 처리 누락** → `object_types`, `link_types`, `action_types` 키가 파일에 없을 수 있다. 없으면 빈 배열로 처리한다.
-- **스키마 오류가 있는 타입의 참조 검증** → `name` 자체가 없는 항목도 참조 검증 대상에서 이름이 없는 채로 처리되지 않도록 주의한다. `name`이 없는 항목은 스키마 오류로 기록하되 참조 검증(중복 검사 포함)에서는 건너뛴다.
-- **오류 카운트와 실제 오류 목록 불일치** → 헤더의 `N개 오류 발견`은 `errors` 목록의 실제 항목 수와 정확히 일치해야 한다.
-- **통과 메시지의 합계 오류** → 통과 시 출력하는 Objects/Links/Actions 수는 모든 도메인의 합산값이다. 도메인별 수가 아니다.
-- **`.ontology/config.yaml`은 있지만 `_index.yaml`이 없는 경우** → '초기화되지 않았습니다' 메시지를 출력하고 종료 (add 또는 analyze 스킬로 도메인을 먼저 추가해야 함)
+- **배열 키 부재** → `object_types`, `link_types`, `action_types` 키가 없으면 빈 배열로 처리한다.
+- **name 없는 항목의 참조 검증** → `name`이 없는 항목은 스키마 오류로 기록하고 참조 검증에서는 건너뛴다.
+- **오류 카운트 불일치** → 헤더의 `N개 오류 발견`은 `errors` 목록의 실제 항목 수와 정확히 일치해야 한다.
+- **통과 메시지 합계** → Objects/Links/Actions 수는 모든 도메인의 합산값 (도메인별 수가 아님).

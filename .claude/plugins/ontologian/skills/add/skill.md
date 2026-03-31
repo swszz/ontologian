@@ -16,38 +16,11 @@ description: Use when the user runs /ontologian:add or wants to add a new Object
 
 ### Step 1: 초기화 체크
 
-Glob 툴로 `.ontology/config.yaml`을 검색한다.
-
-```
-Glob: pattern=".ontology/config.yaml"
-```
-
-**파일이 없으면** 아래 메시지를 출력하고 사용자 동의를 구한다.
-
-```
-온톨로지 저장소가 초기화되지 않았습니다. 지금 초기화할까요? (y/n)
-```
-
-- `n` → 종료
-- `y` → 아래 두 파일을 Write 툴로 생성한 뒤 Step 2로 진행
-
-`.ontology/config.yaml` 생성 내용:
-```yaml
-version: 1
-global_sync: ask
-global_path: ~/.ontologian
-```
-
-`.ontology/domains/_index.yaml` 생성 내용:
-```yaml
-domains: []
-```
-
-**파일이 있으면** Read 툴로 읽어 `global_sync`, `global_path` 값을 메모리에 저장한다.
-
-```
-Read: .ontology/config.yaml
-```
+Glob `.ontology/config.yaml`:
+- **없으면**: `"온톨로지 저장소가 초기화되지 않았습니다. 지금 초기화할까요? (y/n)"` → `n`=종료, `y`=아래 두 파일 Write 생성 후 계속:
+  - `.ontology/config.yaml`: `version: 1 / global_sync: ask / global_path: ~/.ontologian`
+  - `.ontology/domains/_index.yaml`: `domains: []`
+- **있으면**: Read 후 `global_sync`, `global_path` 저장 (기본값: `ask`, `~/.ontologian`)
 
 ### Step 2: _index.yaml 읽기
 
@@ -111,21 +84,17 @@ Read: .ontology/domains/_index.yaml
 
 아래 질문을 **한 번에 하나씩** 순서대로 한다.
 
-1. **이름** (PascalCase):
+1. **이름과 설명** (PascalCase):
    ```
-   Object Type 이름을 입력하세요 (PascalCase, 예: Product):
+   Object Type 이름과 설명을 입력하세요.
+   (형식: "이름, 설명"  예: "Product, 판매 상품"  /  설명 없이: "Product")
    ```
 
-   입력값이 PascalCase(첫 글자 대문자, 이후 영문/숫자, 공백·언더스코어·하이픈 없음)가 아니면 즉시 재질의한다:
+   이름이 PascalCase(첫 글자 대문자, 이후 영문/숫자, 공백·언더스코어·하이픈 없음)가 아니면 즉시 재질의한다:
    ```
    이름은 PascalCase여야 합니다(예: Product). 다시 입력하세요:
    ```
    올바른 값이 입력될 때까지 반복한다.
-
-2. **설명**:
-   ```
-   설명을 입력하세요 (선택, 빈칸 엔터로 건너뜀):
-   ```
 
 3. **Properties 반복 수집**: 아래 프롬프트를 반복한다.
 
@@ -487,27 +456,14 @@ _index.yaml의 해당 도메인 `last_modified`를 오늘 날짜로 갱신한다
 
 ### Step 8: 글로벌 싱크 체크
 
-Step 1에서 읽은 `global_sync` 값에 따라 동작한다.
+- `ask` → `"글로벌 저장소(<global_path>)에도 반영할까요? (y/n)"` → y=실행, n=건너뜀
+- `auto` → 즉시 실행
+- `off` → 건너뜀
 
-**`ask`인 경우:**
-```
-글로벌 저장소(<global_path>)에도 반영할까요? (y/n)
-```
-- `y` → 아래 싱크 실행
-- `n` → 건너뜀
-
-**`auto`인 경우:** 사용자 확인 없이 싱크 실행.
-
-**`off`인 경우:** 아무것도 하지 않고 Step 9로 이동.
-
-**싱크 실행 내용:**
-
-수정된 도메인 파일(들)을 `<global_path>/domains/<domain_name>/` 경로에 Write 툴로 복사한다.
-
-- 마이그레이션 전 도메인: `ontology.yaml` 1개 복사
-- 마이그레이션 후 도메인: 수정된 타입 파일 1개 복사
-
-`<global_path>/domains/_index.yaml`도 최신 내용으로 Write 툴로 덮어쓴다.
+**실행**: 수정된 도메인 파일(들) + `_index.yaml`을 `<global_path>/domains/` 경로에 Write 복사.
+- 마이그레이션 전: `<global_path>/domains/<domain_name>/ontology.yaml`
+- 마이그레이션 후: 수정된 타입 파일 1개
+- `<global_path>/domains/_index.yaml`도 덮어쓰기
 
 ---
 
@@ -528,11 +484,8 @@ Step 1에서 읽은 `global_sync` 값에 따라 동작한다.
 
 ## Common Mistakes
 
-- **여러 질문을 한꺼번에 출력하는 경우** → 반드시 한 번에 하나씩 질문하고 응답을 기다린다.
-- **`path`와 `paths` 혼동** → `path`(단수) = 마이그레이션 전 단일 파일, `paths`(복수) = 마이그레이션 후 타입별 파일. 필드 이름을 정확히 확인한다.
-- **빈 배열(`[]`) 처리 누락** → `[]` 형태일 때 그대로 항목을 추가하면 YAML이 깨진다. 반드시 배열 형식으로 교체한다.
+- **여러 질문을 한꺼번에 출력** → 반드시 한 번에 하나씩 질문하고 응답을 기다린다.
 - **`computed: false` 또는 `primary: false` 명시** → `false`인 경우 해당 필드 자체를 생략한다. `true`일 때만 포함한다.
-- **설명이 없을 때 `description: ""` 작성** → 빈 설명도 필드를 생략한다.
 - **_index.yaml `last_modified` 갱신 누락** → YAML 파일 수정 후 반드시 갱신한다.
-- **신규 도메인 path 형식 오류** → `_index.yaml`의 `path` 값은 `<domain_name>/ontology.yaml` 형태(앞에 `domains/` 없음)로 저장한다.
-- **이름 형식 검증 누락** → Object Type은 PascalCase, Action Type은 snake_case, Link Type은 소문자+언더스코어를 반드시 검증하고, 위반 시 재질의한다. 형식이 올바를 때까지 다음 질문으로 넘어가지 않는다.
+- **신규 도메인 path 형식** → `_index.yaml`의 `path` 값은 `<domain_name>/ontology.yaml` 형태 (앞에 `domains/` 없음).
+- **이름 형식 검증 누락** → Object Type=PascalCase, Action Type=snake_case, Link Type=소문자+언더스코어. 위반 시 올바른 값이 입력될 때까지 재질의한다.

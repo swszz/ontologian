@@ -16,17 +16,7 @@ description: Use when the user runs /ontologian:migrate or wants to split a doma
 
 ### Step 1: 초기화 체크
 
-Glob 툴로 `.ontology/domains/_index.yaml`을 검색한다.
-
-```
-Glob: pattern=".ontology/domains/_index.yaml"
-```
-
-파일이 없으면 아래 메시지를 출력하고 **즉시 종료**한다.
-
-```
-온톨로지가 초기화되지 않았습니다.
-```
+Glob `.ontology/domains/_index.yaml` → 없으면 `"온톨로지가 초기화되지 않았습니다."` 출력 후 **즉시 종료**.
 
 ### Step 2: `_index.yaml` 읽기
 
@@ -253,46 +243,22 @@ _index.yaml 업데이트 완료 (path → paths)
 
 ### Step 10: 글로벌 싱크 체크
 
-Glob 툴로 `.ontology/config.yaml`을 검색한다.
+Glob `.ontology/config.yaml` → 없으면 건너뜀. 있으면 Read 후 `global_sync`, `global_path` 확인.
 
-```
-Glob: pattern=".ontology/config.yaml"
-```
+- `ask` → `"글로벌 저장소(<global_path>)에도 반영할까요? (y/n)"` → y=실행, n=건너뜀
+- `auto` → 즉시 실행
+- `off` 또는 config.yaml 없으면 → 건너뜀
 
-파일이 있으면 Read 툴로 읽어 `global_sync`, `global_path` 값을 확인한다.
-
-**`ask`인 경우:**
-```
-글로벌 저장소(<global_path>)에도 반영할까요? (y/n)
-```
-- `y` → 아래 싱크 실행
-- `n` → 건너뜀
-
-**`auto`인 경우:** 사용자 확인 없이 싱크 실행.
-
-**`off`인 경우 또는 config.yaml이 없는 경우:** 아무것도 하지 않고 종료.
-
-**싱크 실행 내용:**
-
-아래 파일들을 `<global_path>/domains/<domain_name>/` 경로에 Write 툴로 복사한다.
-
-- `object_types.yaml`
-- `link_types.yaml`
-- `action_types.yaml`
-
-`<global_path>/domains/_index.yaml`도 최신 내용으로 Write 툴로 덮어쓴다.
+**실행**: `object_types.yaml`, `link_types.yaml`, `action_types.yaml`을 `<global_path>/domains/<domain_name>/`에 Write 복사. `_index.yaml`도 `<global_path>/domains/`에 덮어쓰기.
 
 ---
 
 ## Common Mistakes
 
-- **`path`와 `paths` 혼동** → `path`(단수) = 마이그레이션 전 단일 파일, `paths`(복수) = 마이그레이션 후 타입별 파일. `paths` 필드가 이미 있는 도메인은 Step 2에서 반드시 제외한다.
-- **`target_dir` 추출 오류** → `path: ecommerce/ontology.yaml`에서 `target_dir`은 `ecommerce`다. 파일명만 제거하고 앞의 디렉토리 경로를 정확히 추출한다. 디렉토리 구조가 중첩된 경우(예: `shop/v2/ontology.yaml`)도 올바르게 처리한다.
-- **기존 타입 배열 내용 누락** → Write 툴로 분리 파일을 생성할 때 원본 `ontology.yaml`의 배열 항목을 그대로 복사해야 한다. 항목을 빠뜨리거나 임의로 수정하지 않는다.
-- **`_index.yaml` 교체 시 기타 필드 손실** → Edit 툴로 `path` → `paths` 교체 시 `description`, `name`, `last_modified` 등 나머지 필드가 유지되어야 한다. `path` 줄만 정확히 교체한다.
-- **로그 디렉토리 미생성** → `.ontology/migrations/` 디렉토리가 없어도 Write 툴은 파일 경로 전체를 기준으로 생성하므로 별도 mkdir 없이 Write 툴로 직접 파일을 생성한다.
-- **오늘 날짜 형식 오류** → `last_modified` 및 로그 파일명의 날짜는 반드시 `YYYY-MM-DD` 형식이어야 한다.
-- **원본 파일 자동 삭제 금지** → 기존 `ontology.yaml`은 사용자가 직접 삭제하도록 안내만 한다. 스킬이 자동으로 삭제하지 않는다.
-- **Edit의 `old_string`에 `last_modified` 포함 금지** → `last_modified` 날짜는 파일마다 다르므로 `old_string`에 포함하면 날짜 불일치로 매칭에 실패한다. `path` 줄(`  path: <target_domain.path>`)만 교체 대상으로 한정한다.
-- **`.ontology/config.yaml`은 있지만 `_index.yaml`이 없는 경우** → '초기화되지 않았습니다' 메시지를 출력하고 종료 (add 또는 analyze 스킬로 도메인을 먼저 추가해야 함)
-- **Edit의 `old_string` 들여쓰기 불일치** → `old_string`은 실제 파일의 들여쓰기(2칸 공백)와 정확히 일치해야 함 — 탭/4칸 등 다른 형식이면 매칭 실패
+- **`paths` 도메인 제외 누락** → `paths` 필드가 이미 있는 도메인은 Step 2에서 반드시 제외한다.
+- **`target_dir` 추출 오류** → `path: ecommerce/ontology.yaml` → `target_dir = ecommerce`. 중첩 경로(예: `shop/v2/ontology.yaml` → `shop/v2`)도 정확히 처리한다.
+- **기존 타입 배열 내용 누락** → 분리 파일 생성 시 원본 배열 항목을 그대로 복사한다.
+- **`_index.yaml` 교체 시 기타 필드 손실** → `path` 줄만 정확히 교체한다. `description`, `name` 등 나머지 필드는 유지.
+- **Edit `old_string`에 `last_modified` 포함 금지** → 날짜 불일치로 매칭 실패. `path` 줄(`  path: <value>`)만 교체 대상.
+- **Edit `old_string` 들여쓰기** → 2칸 공백과 정확히 일치해야 한다.
+- **원본 파일 자동 삭제 금지** → 기존 `ontology.yaml` 삭제는 사용자에게 안내만 한다.

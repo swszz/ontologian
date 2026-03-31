@@ -1,0 +1,8 @@
+# User project data (not part of the plugin)
+.ontology/
+
+# IDE
+.idea/
+
+# OS
+.DS_Store

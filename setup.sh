@@ -41,7 +41,7 @@ def deep_merge(base, override):
         else:
             base[k] = v
     return base
-deep_merge(settings, new_entry)
+settings = deep_merge(settings, new_entry)
 with open(path, 'w') as f:
     json.dump(settings, f, indent=2)
 PYEOF

@@ -6,19 +6,10 @@ Palantir 온톨로지 개념(Object Type, Property, Link Type, Action Type)을 �
 
 ### 1. 마켓플레이스 등록
 
-`~/.claude/settings.json` 에 아래 내용을 추가한다:
+터미널에서 실행:
 
-```json
-{
-  "extraKnownMarketplaces": {
-    "ontologian": {
-      "source": {
-        "source": "github",
-        "repo": "swszz/ontologian-marketplace"
-      }
-    }
-  }
-}
+```bash
+curl -fsSL https://raw.githubusercontent.com/swszz/ontologian/main/setup.sh | bash
 ```
 
 ### 2. 플러그인 설치
@@ -26,7 +17,13 @@ Palantir 온톨로지 개념(Object Type, Property, Link Type, Action Type)을 �
 Claude Code에서 실행:
 
 ```
-/plugin install ontologian@ontologian-marketplace
+/plugin install ontologian@ontologian
+```
+
+### 업데이트
+
+```
+/plugin update ontologian
 ```
 
 ## 사용법

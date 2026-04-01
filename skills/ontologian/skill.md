@@ -7,108 +7,108 @@ description: Use when the user runs /ontologian or wants to see the overall stat
 
 ## Overview
 
-프로젝트 온톨로지 저장소의 전체 현황을 조회하고 요약 테이블과 사용 가능한 커맨드 목록을 출력한다.
+Display a summary table and available commands for the project's ontology repository.
 
 ## Steps
 
-### Step 1: `.ontology/` 존재 여부 확인
+### Step 1: Check `.ontology/` exists
 
-Glob `.ontology/config.yaml` → 없으면 아래 메시지 출력 후 **즉시 종료**:
+Glob `.ontology/config.yaml` → if missing, output the following and **exit immediately**:
 
 ```
-온톨로지 저장소가 초기화되지 않았습니다.
-시작하려면 `/ontologian:add` 또는 `/ontologian:analyze`를 실행하세요. (저장소 자동 초기화 포함)
+The ontology repository is not initialized.
+To get started, run `/ontologian:add` or `/ontologian:analyze` (includes auto-initialization).
 
-사용 가능한 커맨드:
-  /ontologian:add       — 새 타입 추가
-  /ontologian:analyze   — 비즈니스 요구사항 분석 → 온톨로지 도출
-  /ontologian:search    — 키워드 검색
-  /ontologian:validate  — 무결성 검증
-  /ontologian:sync      — 글로벌 싱크
-  /ontologian:migrate   — 타입별 파일 분리
-  /ontologian:visualize — 관계 다이어그램
+Available commands:
+  /ontologian:add       — Add a new type
+  /ontologian:analyze   — Derive ontology from business requirements
+  /ontologian:search    — Search by keyword
+  /ontologian:validate  — Validate integrity
+  /ontologian:sync      — Sync to global store
+  /ontologian:migrate   — Split domain file into per-type files
+  /ontologian:visualize — Render relationship diagram
 ```
 
-### Step 2: config.yaml 읽기
+### Step 2: Read config.yaml
 
-Read 툴로 `.ontology/config.yaml`을 읽어 다음 필드를 추출한다.
+Use the Read tool to read `.ontology/config.yaml` and extract:
 
 - `version`
-- `global_sync` (기본값: `ask`)
-- `global_path` (기본값: `~/.ontologian`)
+- `global_sync` (default: `ask`)
+- `global_path` (default: `~/.ontologian`)
 
-### Step 3: `_index.yaml` 읽기
+### Step 3: Read `_index.yaml`
 
-Read 툴로 `.ontology/domains/_index.yaml`을 읽는다.
+Use the Read tool to read `.ontology/domains/_index.yaml`.
 
-파일이 없거나 `domains` 목록이 비어있으면:
-
-```
-등록된 도메인이 없습니다.
-도메인을 추가하려면 `/ontologian:add` 커맨드를 실행하세요.
-```
-
-를 출력하고 Step 5(커맨드 목록)로 건너뛴다.
-
-### Step 4: 각 도메인의 온톨로지 파일 읽기
-
-`_index.yaml`의 `domains` 배열을 순회하며 각 도메인의 타입 수를 집계한다.
-
-**마이그레이션 여부 판단:**
-
-- `path` 필드가 있으면 → 마이그레이션 **전**: `.ontology/domains/<path>` 파일 하나를 Read로 읽는다.
-- `paths` 필드가 있으면 → 마이그레이션 **후**: `paths.object_types`, `paths.link_types`, `paths.action_types` 세 파일을 각각 Read로 읽는다. 각 파일의 실제 경로는 `.ontology/domains/<paths.object_types>` 형태로 조합한다(예: `paths.object_types` 값이 `user/object_types.yaml`이면 `.ontology/domains/user/object_types.yaml`).
-
-**집계 항목 (도메인별):**
-
-| 항목 | 집계 방법 |
-|------|-----------|
-| `object_count` | `object_types` 배열의 원소 수 |
-| `link_count` | `link_types` 배열의 원소 수 |
-| `action_count` | `action_types` 배열의 원소 수 |
-| `last_modified` | `_index.yaml`의 해당 도메인 `last_modified` 값 |
-
-파일 읽기에 실패한 도메인은 해당 행에 `(읽기 실패)`를 표시하고 건너뛴다.
-
-### Step 5: 결과 출력
-
-아래 형식으로 출력한다. 테이블은 유니코드 박스 문자를 사용한다.
+If the file is missing or the `domains` list is empty, output:
 
 ```
-## Ontologian — 온톨로지 현황
+No domains registered.
+Run `/ontologian:add` to add a domain.
+```
 
-설정:
-  글로벌 싱크: <global_sync>   ※ ask=변경 시 확인 요청 / auto=자동 싱크 / off=싱크 비활성화
-  글로벌 경로: <global_path>
+Then skip to Step 5 (command list).
 
-도메인 목록:
+### Step 4: Read each domain's ontology files
+
+Iterate over the `domains` array in `_index.yaml` and aggregate type counts per domain.
+
+**Determining migration status:**
+
+- If the `path` field is present → pre-migration: Read the single file at `.ontology/domains/<path>`.
+- If the `paths` field is present → post-migration: Read `paths.object_types`, `paths.link_types`, and `paths.action_types` separately. Resolve each to `.ontology/domains/<paths.X>` (e.g. if `paths.object_types` is `user/object_types.yaml`, read `.ontology/domains/user/object_types.yaml`).
+
+**Aggregate per domain:**
+
+| Field | How to count |
+|-------|-------------|
+| `object_count` | Number of items in `object_types` array |
+| `link_count` | Number of items in `link_types` array |
+| `action_count` | Number of items in `action_types` array |
+| `last_modified` | Value from `_index.yaml` for that domain |
+
+If a domain file cannot be read, show `(read error)` in that row and skip it.
+
+### Step 5: Output results
+
+Output in the following format using Unicode box characters:
+
+```
+## Ontologian — Repository Status
+
+Config:
+  Global sync: <global_sync>   ※ ask=prompt on change / auto=sync automatically / off=disabled
+  Global path: <global_path>
+
+Domains:
 ┌────────────────┬──────────┬──────────┬──────────┬──────────────────┐
-│ 도메인         │ Objects  │ Links    │ Actions  │ 마지막 수정       │
+│ Domain         │ Objects  │ Links    │ Actions  │ Last Modified    │
 ├────────────────┼──────────┼──────────┼──────────┼──────────────────┤
 │ <name>         │ <n>      │ <n>      │ <n>      │ <date>           │
 └────────────────┴──────────┴──────────┴──────────┴──────────────────┘
 
-총 도메인: <N> | 총 Object Types: <N> | 총 Link Types: <N> | 총 Action Types: <N>
-관계 상세: /ontologian:visualize | 전체 검증: /ontologian:validate
+Total domains: <N> | Object Types: <N> | Link Types: <N> | Action Types: <N>
+Details: /ontologian:visualize | Validate all: /ontologian:validate
 
-사용 가능한 커맨드:
-  /ontologian:add       — 새 타입 추가
-  /ontologian:analyze   — 비즈니스 요구사항 분석 → 온톨로지 도출
-  /ontologian:search    — 키워드 검색
-  /ontologian:validate  — 무결성 검증
-  /ontologian:sync      — 글로벌 싱크
-  /ontologian:migrate   — 타입별 파일 분리
-  /ontologian:visualize — 관계 다이어그램
+Available commands:
+  /ontologian:add       — Add a new type
+  /ontologian:analyze   — Derive ontology from business requirements
+  /ontologian:search    — Search by keyword
+  /ontologian:validate  — Validate integrity
+  /ontologian:sync      — Sync to global store
+  /ontologian:migrate   — Split domain file into per-type files
+  /ontologian:visualize — Render relationship diagram
 ```
 
-**테이블 렌더링 규칙:**
+**Table rendering rules:**
 
-- 도메인이 여러 개면 각 도메인마다 행(row)을 추가하고, 마지막 행 다음에 `└─…─┘` 하단 테두리를 출력한다.
-- 각 열의 너비는 위 형식 기준으로 고정한다(내용이 길면 잘라서 `…` 처리).
-- 합계 행은 테이블 밖 별도 줄로 출력한다.
+- Add one row per domain. Close the table with `└─…─┘` after the last row.
+- Column widths are fixed as shown above (truncate with `…` if content is too long).
+- The totals line is output outside the table as a separate line.
 
 ## Common Mistakes
 
-- **도메인 파일 읽기 오류** → Step 4의 path/paths 분기 조건을 정확히 확인한다. `paths` 도메인은 3개 파일을 각각 Read한다.
-- **배열 키 부재** → `object_types` 키가 없는 파일에서 집계 시 0으로 처리한다.
-- **합계를 테이블 안에 출력** → 합계는 테이블 **바깥** 별도 줄로 출력한다.
+- **Domain file read error** → Double-check the path/paths branching logic in Step 4. Post-migration domains require reading three separate files.
+- **Missing array key** → If `object_types` is absent, treat the count as 0.
+- **Totals inside the table** → Totals must be output **outside** the table as a separate line.

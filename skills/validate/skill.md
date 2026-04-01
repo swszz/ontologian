@@ -7,258 +7,258 @@ description: Use when the user runs /ontologian:validate or wants to check ontol
 
 ## Overview
 
-모든 도메인의 YAML 스키마와 참조 무결성을 검증한다.
-오류가 없으면 통과 메시지를, 오류가 있으면 도메인·타입·필드별 오류 목록을 출력한다.
+Validate the YAML schema and referential integrity across all domains.
+Output a pass message when no errors are found, or a detailed list of errors by domain, type, and field.
 
 ---
 
 ## Steps
 
-### Step 1: 초기화 체크
+### Step 1: Initialization check
 
-Glob `.ontology/domains/_index.yaml` → 없으면 `"온톨로지가 초기화되지 않았습니다."` 출력 후 **즉시 종료**.
+Glob `.ontology/domains/_index.yaml` → if missing, output `"Ontology is not initialized."` and **exit immediately**.
 
-### Step 2: `_index.yaml` 읽기
+### Step 2: Read `_index.yaml`
 
-Read 툴로 `.ontology/domains/_index.yaml`을 읽는다.
+Use the Read tool to read `.ontology/domains/_index.yaml`.
 
-`domains` 배열이 비어있거나 파일이 없으면:
-
-```
-등록된 도메인이 없습니다. 검증할 항목이 없습니다.
-```
-
-를 출력하고 종료한다.
-
-### Step 3: 도메인별 파일 읽기
-
-`_index.yaml`의 `domains` 배열을 순회하며 각 도메인의 타입 데이터를 읽는다.
-
-**마이그레이션 여부 판단:**
-
-- `path` 필드가 있으면 → `.ontology/domains/<path>` 파일 하나를 Read로 읽는다. `object_types`, `link_types`, `action_types` 배열을 추출한다.
-- `paths` 필드가 있으면 → `paths.object_types`, `paths.link_types`, `paths.action_types` 각 값을 `.ontology/domains/<paths.X>` 경로로 조합해 Read로 읽는다. 각 파일에서 해당 배열을 추출한다.
-
-파일 읽기에 실패한 도메인은 오류 목록에 다음 항목을 추가하고 해당 도메인의 나머지 검증을 건너뛴다:
+If the `domains` array is empty or the file is missing:
 
 ```
-[<domain_name>] 파일을 읽을 수 없습니다: <파일경로>
+No domains registered. Nothing to validate.
 ```
 
-각 도메인마다 아래 데이터를 메모리에 저장한다:
+Output and exit.
+
+### Step 3: Read domain files
+
+Iterate over the `domains` array in `_index.yaml` and read each domain's type data.
+
+**Determining migration status:**
+
+- If `path` is present → Read the single file at `.ontology/domains/<path>`. Extract `object_types`, `link_types`, `action_types` arrays.
+- If `paths` is present → Compose paths as `.ontology/domains/<paths.X>` for each of `paths.object_types`, `paths.link_types`, and `paths.action_types`. Read each file separately and extract the corresponding array.
+
+If a domain file cannot be read, add the following to the error list and skip validation for that domain:
+
+```
+[<domain_name>] Cannot read file: <file_path>
+```
+
+For each domain, store in memory:
 
 ```
 domain_data[domain_name] = {
-  object_types: [...],   # 없으면 빈 배열
-  link_types: [...],     # 없으면 빈 배열
-  action_types: [...]    # 없으면 빈 배열
+  object_types: [...],   # empty array if absent
+  link_types: [...],     # empty array if absent
+  action_types: [...]    # empty array if absent
 }
 ```
 
-### Step 4: 스키마 검증
+### Step 4: Schema validation
 
-각 도메인의 모든 타입 항목을 순회하며 필수 필드와 허용 값을 검사한다. 위반 시 `errors` 목록에 추가한다.
+Iterate over all type items in each domain and check required fields and allowed values. Add violations to the `errors` list.
 
-#### Object Type 검증
+#### Object Type validation
 
-각 항목에 대해:
+For each item:
 
-| 필드 | 규칙 |
-|------|------|
-| `name` | 필수. 없으면 오류 |
-| `description` | 필수. 없거나 빈 문자열이면 오류 |
+| Field | Rule |
+|-------|------|
+| `name` | Required. Error if absent. |
+| `description` | Required. Error if absent or empty string. |
 
-`properties` 배열이 있으면 각 property도 검증한다:
+If a `properties` array exists, validate each property:
 
-| 필드 | 규칙 |
-|------|------|
-| `name` | 필수 |
-| `type` | 필수. 허용값: `string`, `int`, `float`, `boolean`, `date`, `datetime`. `integer`는 `int`의 별칭으로 허용 (오류로 처리하지 않음) |
-| `description` | 선택. 없으면 경고(warning, 오류는 아님): `[ObjectType명.property명] description이 없습니다. 필드 의미를 기록하면 지식 유지에 도움이 됩니다.` |
-| `computed` | 선택. `true`이면 `expression` 필드의 존재 여부를 확인한다. 없으면 경고(warning, 오류는 아님): `computed 속성 '<name>'에 expression이 없습니다.` |
+| Field | Rule |
+|-------|------|
+| `name` | Required |
+| `type` | Required. Allowed values: `string`, `int`, `float`, `boolean`, `date`, `datetime`. `integer` is accepted as an alias for `int` (not an error). |
+| `description` | Optional. If absent, emit a warning (not an error): `[ObjectType.property] No description. Adding one helps preserve field intent.` |
+| `computed` | Optional. If `true`, check for `expression`. If absent, emit a warning: `Computed property '<name>' has no expression.` |
 
-#### Link Type 검증
+#### Link Type validation
 
-각 항목에 대해:
+For each item:
 
-| 필드 | 규칙 |
-|------|------|
-| `name` | 필수 |
-| `from` | 필수 |
-| `to` | 필수 |
-| `cardinality` | 필수. 허용값: `one_to_one`, `one_to_many`, `many_to_many`, `many_to_one` |
+| Field | Rule |
+|-------|------|
+| `name` | Required |
+| `from` | Required |
+| `to` | Required |
+| `cardinality` | Required. Allowed values: `one_to_one`, `one_to_many`, `many_to_many`, `many_to_one` |
 
-#### Action Type 검증
+#### Action Type validation
 
-각 항목에 대해:
+For each item:
 
-| 필드 | 규칙 |
-|------|------|
-| `name` | 필수 |
-| `description` | 필수. 없거나 빈 문자열이면 오류 |
-| `trigger` | 필수. 허용값: `object_created`, `object_updated`, `object_deleted`, `manual` |
-| `target` | 필수 |
+| Field | Rule |
+|-------|------|
+| `name` | Required |
+| `description` | Required. Error if absent or empty string. |
+| `trigger` | Required. Allowed values: `object_created`, `object_updated`, `object_deleted`, `manual` |
+| `target` | Required |
 
-**`trigger_condition` 검증 (선택적 필드):**
+**`trigger_condition` validation (optional field):**
 
-`trigger_condition` 필드가 존재하면:
-- `trigger`가 `object_updated`인 경우에만 허용한다. 다른 trigger 값과 함께 존재하면 오류:
+If `trigger_condition` exists:
+- Only allowed when `trigger` is `object_updated`. If another trigger value is present, add an error:
   ```
   [<domain_name>] Action Type '<name>'
-    → trigger_condition: trigger가 '<trigger_value>'일 때 사용할 수 없습니다. object_updated일 때만 허용됩니다.
+    → trigger_condition: not allowed when trigger is '<trigger_value>'. Only valid with object_updated.
   ```
-- 필수 하위 필드: `field`, `from`, `to` 모두 존재해야 한다. 하나라도 없으면 오류:
+- Required sub-fields: `field`, `from`, and `to` must all be present. If any is missing, add an error:
   ```
   [<domain_name>] Action Type '<name>'
-    → trigger_condition.<field_name>: 필수 필드가 없습니다. (field, from, to 모두 필요)
+    → trigger_condition.<field_name>: required field missing. (field, from, to are all required)
   ```
 
-`parameters` 배열이 있으면 각 parameter도 검증한다:
+If a `parameters` array exists, validate each parameter:
 
-| 필드 | 규칙 |
-|------|------|
-| `name` | 필수 |
-| `type` | 필수. 허용값: `string`, `int`, `float`, `boolean`, `date`, `datetime` |
+| Field | Rule |
+|-------|------|
+| `name` | Required |
+| `type` | Required. Allowed values: `string`, `int`, `float`, `boolean`, `date`, `datetime` |
 
-**parameter에 `name`이 없는 경우:** 스키마 오류로 기록하되 해당 parameter의 나머지 필드(`type` 등) 검증은 건너뛴다.
+**Parameter with no `name`**: Record as a schema error and skip further validation for that parameter.
 
-**오류 메시지 형식:**
+**Error message format:**
 
 ```
 [<domain_name>] <Type Kind> '<name>'
-  → <field>: <오류 내용>
+  → <field>: <error description>
 ```
 
-예시:
+Examples:
 
 ```
 [ecommerce] Object Type 'Product'
-  → description: 필수 필드가 없습니다.
+  → description: required field missing.
 
 [ecommerce] Object Type 'Product' > property 'price'
-  → type: 허용되지 않는 값 'number'. (허용값: string, int, float, boolean, date, datetime)
+  → type: invalid value 'number'. (Allowed: string, int, float, boolean, date, datetime)
 
 [ecommerce] Link Type 'places'
-  → cardinality: 허용되지 않는 값 'one_to_few'. (허용값: one_to_one, one_to_many, many_to_many, many_to_one)
+  → cardinality: invalid value 'one_to_few'. (Allowed: one_to_one, one_to_many, many_to_many, many_to_one)
 
 [ecommerce] Action Type 'send_welcome_email'
-  → trigger: 허용되지 않는 값 'on_create'. (허용값: object_created, object_updated, object_deleted, manual)
+  → trigger: invalid value 'on_create'. (Allowed: object_created, object_updated, object_deleted, manual)
 
-[ecommerce] Action Type 'send_email' > parameter 'index 0': name 필드 없음
+[ecommerce] Action Type 'send_email' > parameter 'index 0': name field missing
 ```
 
-warning 예시:
+Warning examples:
 
 ```
-⚠ [ecommerce] Object Type 'Product' > property 'price': description이 없습니다. 필드 의미를 기록하면 지식 유지에 도움이 됩니다.
-⚠ [ecommerce] Object Type 'User' > property 'status': description이 없습니다. 필드 의미를 기록하면 지식 유지에 도움이 됩니다.
+⚠ [ecommerce] Object Type 'Product' > property 'price': No description. Adding one helps preserve field intent.
+⚠ [ecommerce] Object Type 'User' > property 'status': No description. Adding one helps preserve field intent.
 ```
 
-### Step 5: 참조 무결성 검증
+### Step 5: Referential integrity validation
 
-각 도메인에서 해당 도메인의 `object_types` 이름 목록(`object_names`)을 먼저 수집한다.
+For each domain, first collect the list of Object Type names (`object_names`) within that domain.
 
-**크로스 도메인 참조 정책:** `from`, `to`, `target` 필드는 동일 도메인 내 Object Type만 허용한다. 다른 도메인의 타입을 참조하면 오류로 처리한다.
+**Cross-domain reference policy:** `from`, `to`, and `target` fields may only reference Object Types within the same domain. References to types in other domains are treated as errors.
 
-#### Link Type 참조 검증
+#### Link Type reference validation
 
-각 Link Type의 `from`, `to` 값이 같은 도메인의 `object_names`에 존재하는지 확인한다.
+Check whether each Link Type's `from` and `to` values exist in `object_names` for the same domain.
 
-존재하지 않으면 오류 추가:
+If not found, add an error:
 
 ```
 [<domain_name>] Link Type '<link_name>'
-  → from: '<value>'가 Object Type으로 존재하지 않습니다.
+  → from: '<value>' does not exist as an Object Type.
 
 [<domain_name>] Link Type '<link_name>'
-  → to: '<value>'가 Object Type으로 존재하지 않습니다.
+  → to: '<value>' does not exist as an Object Type.
 ```
 
-#### Action Type 참조 검증
+#### Action Type reference validation
 
-각 Action Type의 `target` 값이 같은 도메인의 `object_names`에 존재하는지 확인한다.
+Check whether each Action Type's `target` value exists in `object_names` for the same domain.
 
-존재하지 않으면 오류 추가:
-
-```
-[<domain_name>] Action Type '<action_name>'
-  → target: '<value>'가 Object Type으로 존재하지 않습니다.
-```
-
-`trigger_condition`이 존재하고 `field` 값이 있으면, `target` Object Type의 `properties`에 해당 `field`가 존재하는지 확인한다.
-
-존재하지 않으면 오류 추가:
+If not found, add an error:
 
 ```
 [<domain_name>] Action Type '<action_name>'
-  → trigger_condition.field: '<field_value>'가 target '<target_name>'의 property로 존재하지 않습니다.
+  → target: '<value>' does not exist as an Object Type.
 ```
 
-### Step 6: 중복 이름 검증
+If `trigger_condition` exists and `field` is set, verify that the `field` exists as a property of the `target` Object Type.
 
-각 도메인 내에서 Object Type, Link Type, Action Type 이름이 각 범주 안에서 중복되는지 확인한다.
-
-- `object_types` 배열 내 `name` 중복
-- `link_types` 배열 내 `name` 중복
-- `action_types` 배열 내 `name` 중복
-
-중복 발견 시 오류 추가:
+If not found, add an error:
 
 ```
-[<domain_name>] Object Type 이름 중복: '<name>'
-[<domain_name>] Link Type 이름 중복: '<name>'
-[<domain_name>] Action Type 이름 중복: '<name>'
+[<domain_name>] Action Type '<action_name>'
+  → trigger_condition.field: '<field_value>' does not exist as a property of target '<target_name>'.
 ```
 
-### Step 7: 결과 출력
+### Step 6: Duplicate name validation
 
-**모든 도메인에서 오류가 없는 경우 (warning 없음):**
+Within each domain, check for duplicate names within each type category:
+
+- Duplicates in `object_types[].name`
+- Duplicates in `link_types[].name`
+- Duplicates in `action_types[].name`
+
+If duplicates found, add an error:
 
 ```
-✓ 모든 도메인 검증 통과 (<N>개 도메인, <N> Objects, <N> Links, <N> Actions)
+[<domain_name>] Duplicate Object Type name: '<name>'
+[<domain_name>] Duplicate Link Type name: '<name>'
+[<domain_name>] Duplicate Action Type name: '<name>'
 ```
 
-**오류는 없지만 warning이 있는 경우:**
+### Step 7: Output results
+
+**No errors and no warnings:**
 
 ```
-✓ 검증 통과 — 단, <W>개 권고사항 있음
+✓ All domains passed validation (<N> domains, <N> Objects, <N> Links, <N> Actions)
+```
+
+**No errors but warnings exist:**
+
+```
+✓ Validation passed — <W> recommendation(s)
 
 ⚠ <warning1>
 ⚠ <warning2>
 ...
 ```
 
-`N` 값은 모든 도메인을 합산한 총 개수다.
+`N` is the total count across all domains.
 
-**오류가 하나 이상인 경우:**
+**One or more errors:**
 
 ```
-✗ 검증 실패 — <N>개 오류 발견
+✗ Validation failed — <N> error(s) found
 
-<오류1>
+<error1>
 
-<오류2>
+<error2>
 
 ...
 ```
 
-오류 뒤에 warning이 있으면 오류 목록 다음에 아래와 같이 이어서 출력한다:
+If warnings also exist, append them after the error list:
 
 ```
-⚠ 권고사항 (<W>개)
+⚠ Recommendations (<W>)
 ⚠ <warning1>
 ⚠ <warning2>
 ...
 ```
 
-오류는 수집된 순서대로 출력한다. 각 오류 항목 사이에 빈 줄을 넣는다.
+Output errors in the order they were collected. Add a blank line between each error item.
 
 ---
 
 ## Common Mistakes
 
-- **배열 키 부재** → `object_types`, `link_types`, `action_types` 키가 없으면 빈 배열로 처리한다.
-- **name 없는 항목의 참조 검증** → `name`이 없는 항목은 스키마 오류로 기록하고 참조 검증에서는 건너뛴다.
-- **오류 카운트 불일치** → 헤더의 `N개 오류 발견`은 `errors` 목록의 실제 항목 수와 정확히 일치해야 한다.
-- **통과 메시지 합계** → Objects/Links/Actions 수는 모든 도메인의 합산값 (도메인별 수가 아님).
-- **warning과 오류 혼용 금지** → property description 누락은 `errors`가 아닌 `warnings`에 추가한다. 오류 카운트에 포함하지 않는다.
+- **Missing array key** → If `object_types`, `link_types`, or `action_types` is absent, treat it as an empty array.
+- **Skipping referential validation for items with no name** → Items missing a `name` field should be recorded as schema errors and excluded from referential checks.
+- **Error count mismatch** → The `N error(s) found` header must exactly match the number of items in the `errors` list.
+- **Wrong totals in pass message** → Objects/Links/Actions counts must be summed across all domains (not per-domain).
+- **Mixing warnings and errors** → Missing property descriptions are `warnings`, not `errors`. Do not include them in the error count.

@@ -7,136 +7,136 @@ description: Use when the user runs /ontologian:search or wants to search for a 
 
 ## Overview
 
-키워드로 온톨로지 전체를 검색한다. 모든 도메인의 Object Type, Link Type, Action Type을 대상으로 대소문자 무시 검색을 수행하고, 결과를 도메인별로 그룹핑하여 출력한다.
+Search the entire ontology by keyword. Perform a case-insensitive search across Object Types, Link Types, and Action Types in all domains, and output results grouped by domain.
 
 ---
 
 ## Steps
 
-### Step 1: 초기화 체크
+### Step 1: Initialization check
 
-Glob `.ontology/domains/_index.yaml` → 없으면 `"온톨로지가 초기화되지 않았습니다."` 출력 후 종료.
+Glob `.ontology/domains/_index.yaml` → if missing, output `"Ontology is not initialized."` and exit.
 
 ---
 
-### Step 2: 키워드 및 필터 확인
+### Step 2: Parse keyword and filters
 
-인자에서 키워드와 필터 옵션을 파싱한다.
+Parse the keyword and filter options from the arguments.
 
-- `--type=object|link|action` → 해당 타입만 검색
-- `--domain=<name>` → 해당 도메인만 검색
-- 나머지 텍스트 → 키워드
+- `--type=object|link|action` → search only the specified type
+- `--domain=<name>` → search only the specified domain
+- Remaining text → keyword
 
-예: `/ontologian:search User --type=object --domain=ecommerce`
+Example: `/ontologian:search User --type=object --domain=ecommerce`
 
-인자가 없으면 질의:
+If no arguments are given, prompt:
 ```
-검색할 키워드를 입력하세요:
+Enter a search keyword:
 ```
 
-키워드, 타입 필터, 도메인 필터를 저장하고 Step 3으로 진행.
+Store the keyword, type filter, and domain filter, then proceed to Step 3.
 
 ---
 
-### Step 3: _index.yaml 읽기 및 도메인 파일 로드
+### Step 3: Read _index.yaml and load domain files
 
-Read `.ontology/domains/_index.yaml`. `domains` 배열이 비어있으면 `"등록된 도메인이 없습니다."` 출력 후 종료.
+Read `.ontology/domains/_index.yaml`. If the `domains` array is empty, output `"No domains registered."` and exit.
 
-`--domain` 필터가 있으면 해당 도메인만 처리. `domains` 배열을 순회하며 파일 Read.
+If a `--domain` filter is set, process only that domain. Iterate over the `domains` array and Read each file.
 
-**path/paths 분기:**
-- `path` 있으면 → `.ontology/domains/<path>` Read (object_types, link_types, action_types 모두 포함)
-- `paths` 있으면 → `.ontology/domains/<paths.object_types>`, `<paths.link_types>`, `<paths.action_types>` 각 Read
+**Branch on path/paths:**
+- If `path` is present → Read `.ontology/domains/<path>` (contains all three type arrays)
+- If `paths` is present → Read `.ontology/domains/<paths.object_types>`, `<paths.link_types>`, and `<paths.action_types>` separately
 
-타입 데이터를 도메인별로 메모리에 저장. 파일 Read 실패 시 해당 도메인 오류 기록 후 계속.
+Store type data in memory per domain. On read failure, log the error for that domain and continue.
 
 ---
 
-### Step 4: 키워드 검색
+### Step 4: Keyword search
 
-저장된 데이터를 도메인별로 순회하며 키워드를 대소문자 무시로 검색한다.
-`--type` 필터가 있으면 해당 타입 배열만 검색.
+Iterate over stored data per domain and search for the keyword case-insensitively.
+If a `--type` filter is set, search only that type's array.
 
-검색 대상 필드:
+Search targets:
 
-| 타입 | 검색 필드 |
-|------|-----------|
+| Type | Fields searched |
+|------|----------------|
 | Object Type | `name`, `description`, `properties[].name` |
 | Link Type | `name`, `description`, `from`, `to` |
 | Action Type | `name`, `description`, `target`, `parameters[].name` |
 
-매칭된 항목을 도메인별로 수집한다.
+Collect matching items grouped by domain.
 
 ---
 
-### Step 5: 결과 출력
+### Step 5: Output results
 
-#### 결과가 없는 경우
-
-```
-키워드 '<keyword>'에 해당하는 항목이 없습니다.
-```
-
-#### 결과가 있는 경우
-
-도메인별로 그룹핑하여 출력한다. 각 항목은 타입 레이블과 핵심 필드를 요약하여 표시한다.
-
-**출력 형식:**
+#### No results
 
 ```
-## 검색 결과: "<keyword>"
+No results found for '<keyword>'.
+```
 
-### 도메인: <domain_name>
+#### Results found
+
+Output grouped by domain. Summarize key fields per item with a type label.
+
+**Output format:**
+
+```
+## Search Results: "<keyword>"
+
+### Domain: <domain_name>
 [Object Type] <name>
-  설명: <description>
+  Description: <description>
   Properties: <prop1_name> (<type>[, PK][, computed]), <prop2_name> (<type>), ...
 
 [Link Type] <name>
   <from> → <to> (<cardinality>)
-  설명: <description>
+  Description: <description>
 
 [Action Type] <name>
-  설명: <description>
-  대상: <target> / 트리거: <trigger>
+  Description: <description>
+  Target: <target> / Trigger: <trigger>
 
-### 도메인: <domain_name2>
+### Domain: <domain_name2>
 ...
 
-총 <N>건 (Object: <N>, Link: <N>, Action: <N>)
+Total: <N> result(s) (Object: <N>, Link: <N>, Action: <N>)
 
-(일부 도메인 로드 실패: <이름1>, <이름2>)  ← 로드 실패한 도메인이 있을 때만 표시
+(Some domains failed to load: <name1>, <name2>)  ← only shown if any domain failed
 ```
 
-**필드 출력 규칙:**
-- `description`이 없는 항목은 설명 줄을 생략한다.
-- Object Type의 `properties`는 한 줄로 요약한다. `primary: true`이면 `PK`, `computed: true`이면 `computed`를 괄호 안에 표기한다. properties가 없으면 생략한다.
-- Link Type의 `cardinality`가 없으면 화살표(`→`)만 표기한다.
-- Action Type의 `trigger`가 없으면 대상만 표기한다.
-- 각 타입별 매칭 항목이 없는 경우 해당 타입 섹션을 생략한다.
+**Field output rules:**
+- Omit the Description line if the item has no `description`.
+- Summarize Object Type `properties` on one line. Mark `primary: true` as `PK` and `computed: true` as `computed` in parentheses. Omit if no properties.
+- If a Link Type has no `cardinality`, show only the arrow (`→`).
+- If an Action Type has no `trigger`, show only the target.
+- Omit a type's section entirely if there are no matching items for that type.
 
 ---
 
-## 출력 예시
+## Example output
 
 ```
-## 검색 결과: "User"
+## Search Results: "User"
 
-### 도메인: ecommerce
+### Domain: ecommerce
 [Object Type] User
-  설명: 서비스 사용자
+  Description: Service user
   Properties: user_id (string, PK), email (string), churn_score (float, computed)
 
 [Link Type] places
   User → Order (one_to_many)
-  설명: 사용자가 주문을 생성
+  Description: A user places an order
 
-총 2건 (Object: 1, Link: 1, Action: 0)
+Total: 2 result(s) (Object: 1, Link: 1, Action: 0)
 ```
 
 ---
 
 ## Common Mistakes
 
-- **대소문자 구분 검색** → 키워드 검색은 반드시 대소문자 무시(case-insensitive)로 수행한다.
-- **도메인 파일 읽기 실패 시 전체 중단** → 특정 도메인 실패해도 나머지 계속. 실패한 도메인은 결과 하단에 `(일부 도메인 로드 실패: <이름>)` 경고 표시.
-- **총계 누락** → 결과 출력 마지막에 반드시 총 건수와 타입별 건수를 출력한다.
+- **Case-sensitive search** → Keyword matching must always be case-insensitive.
+- **Stopping on domain load failure** → If one domain fails to load, continue with the rest. Show a warning at the bottom: `(Some domains failed to load: <name>)`.
+- **Missing total count** → Always output the total and per-type counts at the end of results.

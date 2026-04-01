@@ -1,129 +1,129 @@
 ---
 name: _common
-description: 모든 ontologian 스킬이 공유하는 공통 패턴 모음. 직접 실행하지 않는다. 각 skill.md에서 인라인 요약본을 사용하고, 상세 절차가 필요할 때 이 파일을 참조한다.
+description: Shared patterns used by all ontologian skills. Not invoked directly. Each skill.md embeds an inline summary and references this file when detailed procedures are needed.
 ---
 
-# Ontologian — 공통 패턴 참조
+# Ontologian — Shared Pattern Reference
 
-각 스킬의 인라인 요약으로 충분히 실행할 수 있다. 이 파일은 상세 절차가 필요할 때 참조하는 문서다.
-
----
-
-## 프리앰블 A: 초기화 체크 (읽기 전용 스킬)
-
-> ontologian, search, validate, migrate, visualize에서 사용
-
-**인라인 요약 (각 스킬에 이 형태로 삽입):**
-```
-Glob `.ontology/domains/_index.yaml` → 없으면 "온톨로지가 초기화되지 않았습니다." 출력 후 종료.
-있으면 다음 단계로 진행.
-```
-
-**sync 스킬 변형 (config.yaml 체크):**
-```
-Glob `.ontology/config.yaml` → 없으면 "온톨로지가 초기화되지 않았습니다." 출력 후 종료.
-있으면 Read 후 global_path 저장 (기본값: ~/.ontologian).
-```
+Each skill's inline summary is sufficient for execution. This file is a reference for detailed procedures when needed.
 
 ---
 
-## 프리앰블 B: 초기화 체크 + 자동 초기화 (쓰기 스킬)
+## Preamble A: Initialization Check (Read-only skills)
 
-> add, analyze에서 사용
+> Used in: ontologian, search, validate, migrate, visualize
 
-**인라인 요약 (각 스킬에 이 형태로 삽입):**
+**Inline summary (embed in each skill in this form):**
+```
+Glob `.ontology/domains/_index.yaml` → if missing, output "Ontology is not initialized." and exit.
+Otherwise, proceed to the next step.
+```
+
+**Sync skill variant (config.yaml check):**
+```
+Glob `.ontology/config.yaml` → if missing, output "Ontology is not initialized." and exit.
+Otherwise, Read it and store global_path (default: ~/.ontologian).
+```
+
+---
+
+## Preamble B: Initialization Check + Auto-init (Write skills)
+
+> Used in: add, analyze
+
+**Inline summary (embed in each skill in this form):**
 ```
 Glob `.ontology/config.yaml`:
-- 없으면: "온톨로지 저장소가 초기화되지 않았습니다. 지금 초기화할까요? (y/n)"
-  → n=종료, y=아래 두 파일 Write 생성 후 계속:
+- If missing: "The ontology repository is not initialized. Initialize it now? (y/n)"
+  → n=exit, y=Write the following two files, then continue:
     .ontology/config.yaml: { version: 1, global_sync: ask, global_path: ~/.ontologian }
     .ontology/domains/_index.yaml: { domains: [] }
-- 있으면: Read 후 global_sync, global_path 저장 (기본값: ask, ~/.ontologian)
+- If present: Read it and store global_sync, global_path (defaults: ask, ~/.ontologian)
 ```
 
 ---
 
-## 패턴: 도메인 파일 읽기 (path/paths)
+## Pattern: Reading Domain Files (path/paths)
 
-> ontologian, add, analyze, search, validate, visualize, sync에서 사용
+> Used in: ontologian, add, analyze, search, validate, visualize, sync
 
-**인라인 요약 (각 스킬에 이 형태로 삽입):**
+**Inline summary (embed in each skill in this form):**
 ```
-path/paths 분기:
-- path 있으면: .ontology/domains/<path> Read → object_types, link_types, action_types 추출
-- paths 있으면: .ontology/domains/<paths.object_types>, <paths.link_types>, <paths.action_types> 각 Read
-배열 키 없으면 빈 배열로 처리. 파일 읽기 실패 시 오류 기록 후 해당 도메인 건너뜀.
+Branch on path/paths:
+- If path is present: Read .ontology/domains/<path> → extract object_types, link_types, action_types
+- If paths is present: Read .ontology/domains/<paths.object_types>, <paths.link_types>, <paths.action_types> separately
+Treat missing array keys as empty arrays. On read failure, log the error and skip that domain.
 ```
 
 ---
 
-## 서브루틴: 도메인 선택 메뉴
+## Subroutine: Domain Selection Menu
 
-> add Step 3, analyze Step 7에서 사용
+> Used in: add Step 3, analyze Step 7
 
-**인라인 요약:**
+**Inline summary:**
 ```
-기존 도메인 목록 번호 출력 + "N. 새 도메인 생성"
-→ 도메인 없으면: "새 도메인 이름을 입력하세요:"
-→ 신규 선택 시: 이름 입력 → 설명 입력(선택, 빈칸=건너뜀)
+Display existing domain list with numbers + "N. Create new domain"
+→ If no domains exist: "Enter a name for the new domain:"
+→ On new domain selection: prompt for name → prompt for description (optional, press Enter to skip)
 ```
 
-**전체 출력 형식:**
+**Full output format:**
 ```
-어떤 도메인에 추가할까요?
+Which domain would you like to add to?
 
   1. <domain_name_1> — <description_1>
   2. <domain_name_2> — <description_2>
   ...
-  N. 새 도메인 생성
+  N. Create new domain
 
-번호를 입력하세요:
+Enter a number:
 ```
 
 ---
 
-## 서브루틴: 글로벌 싱크 체크
+## Subroutine: Global Sync Check
 
-> add Step 8, analyze Step 10, migrate Step 10에서 사용
+> Used in: add Step 8, analyze Step 10, migrate Step 10
 
-**인라인 요약 (각 스킬에 이 형태로 삽입):**
+**Inline summary (embed in each skill in this form):**
 ```
-global_sync에 따라:
-- ask → "글로벌 저장소(<global_path>)에도 반영할까요? (y/n)" — y=실행, n=건너뜀
-- auto → 즉시 실행
-- off → 건너뜀
-실행 내용: 수정된 도메인 파일(들) + _index.yaml을 <global_path>/domains/ 경로에 Write 복사
+Based on global_sync:
+- ask → "Sync to global store (<global_path>) as well? (y/n)" — y=proceed, n=skip
+- auto → proceed immediately
+- off → skip
+Action: Write-copy the modified domain file(s) + _index.yaml to <global_path>/domains/
 ```
 
-**상세:**
-- 마이그레이션 전 도메인: `<global_path>/domains/<domain_name>/ontology.yaml` Write
-- 마이그레이션 후 도메인: 수정된 타입 파일(들) Write
-- `<global_path>/domains/_index.yaml` Write (최신 내용으로 덮어쓰기)
+**Details:**
+- Pre-migration domain: Write `<global_path>/domains/<domain_name>/ontology.yaml`
+- Post-migration domain: Write the modified type file(s)
+- Always overwrite `<global_path>/domains/_index.yaml` with the latest content
 
 ---
 
-## 공통 주의사항
+## Common Rules
 
-모든 스킬에서 유효한 규칙 — 각 스킬의 Common Mistakes에서 중복 제거됨.
+Rules that apply to all skills — deduplicated from individual skill Common Mistakes sections.
 
-1. **path/paths 혼동**: `path`(단수) = 마이그레이션 전 단일 파일, `paths`(복수) = 마이그레이션 후 타입별 3파일. 필드 이름을 정확히 확인한다.
-2. **빈 배열(`[]`) 처리**: `object_types: []` 형태일 때 직접 항목을 추가하면 YAML이 깨진다. 반드시 배열 형식으로 교체:
+1. **path vs. paths confusion**: `path` (singular) = pre-migration single file; `paths` (plural) = post-migration three separate type files. Always check the exact field name.
+2. **Empty array (`[]`) handling**: When `object_types: []` is present, appending items directly will break the YAML. Always replace with proper array form:
    ```
    old: "object_types: []"
    new: "object_types:\n  - name: ..."
    ```
-3. **last_modified 갱신**: YAML 파일 수정 후 반드시 `_index.yaml`의 해당 도메인 `last_modified`를 오늘 날짜(YYYY-MM-DD)로 갱신한다.
-4. **description 빈 값**: 설명이 없으면 `description: ""`가 아닌 필드 자체를 생략한다. (타입 수준 및 property 수준 모두 동일)
-5. **false 필드 생략**: `primary: false`, `computed: false`는 명시하지 않는다. `true`일 때만 포함한다.
-6. **property description**: 각 property에 선택적으로 `description`을 기재한다. 허용값이 정해진 필드는 `"허용값: A, B, C"` 형식을 권장한다. 없으면 필드 생략.
+3. **Updating last_modified**: After modifying any YAML file, always update the corresponding domain's `last_modified` in `_index.yaml` to today's date (YYYY-MM-DD).
+4. **Omitting empty description**: If there is no description, omit the field entirely rather than writing `description: ""`. This applies at both the type level and the property level.
+5. **Omitting false fields**: Do not write `primary: false` or `computed: false`. Only include these fields when their value is `true`.
+6. **Property description**: Each property may optionally include a `description`. For fields with a defined set of allowed values, use the format `"Allowed values: A, B, C"`. Omit the field if there is nothing meaningful to say.
 
-**Object Type property 스키마 (전체):**
+**Object Type property schema (complete):**
 ```yaml
 properties:
   - name: <snake_case>
     type: string|int|float|boolean|date|datetime
-    description: "<필드의 의미, 허용값, 비즈니스 맥락 등>"  # 선택 (없으면 생략)
-    primary: true       # primary=true인 경우만
-    computed: true      # computed=true인 경우만
-    expression: "<식>"  # computed=true이고 expression이 있을 때만
+    description: "<field meaning, allowed values, business context>"  # optional (omit if absent)
+    primary: true       # only when primary=true
+    computed: true      # only when computed=true
+    expression: "<expr>"  # only when computed=true and expression is known
 ```

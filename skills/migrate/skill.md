@@ -7,183 +7,181 @@ description: Use when the user runs /ontologian:migrate or wants to split a doma
 
 ## Overview
 
-도메인의 단일 `ontology.yaml`을 `object_types.yaml`, `link_types.yaml`, `action_types.yaml` 3개 파일로 분리한다.
-이미 `paths` 필드로 마이그레이션된 도메인은 대상에서 제외한다.
+Split a domain's single `ontology.yaml` into three separate files: `object_types.yaml`, `link_types.yaml`, and `action_types.yaml`.
+Domains that already have a `paths` field are already migrated and are excluded from the target list.
 
 ---
 
 ## Steps
 
-### Step 1: 초기화 체크
+### Step 1: Initialization check
 
-Glob `.ontology/domains/_index.yaml` → 없으면 `"온톨로지가 초기화되지 않았습니다."` 출력 후 **즉시 종료**.
+Glob `.ontology/domains/_index.yaml` → if missing, output `"Ontology is not initialized."` and **exit immediately**.
 
-### Step 2: `_index.yaml` 읽기
+### Step 2: Read `_index.yaml`
 
-Read 툴로 `.ontology/domains/_index.yaml`을 읽는다.
+Use the Read tool to read `.ontology/domains/_index.yaml`.
 
-`domains` 배열을 메모리에 저장한다.
+Store the `domains` array in memory.
 
-`domains` 배열이 비어있으면 아래 메시지를 출력하고 **즉시 종료**한다.
-
-```
-등록된 도메인이 없습니다.
-```
-
-**분리 가능한 도메인 필터링:**
-
-`domains` 배열에서 `path` 필드가 있는 항목만 추출한다. (`paths` 필드가 있는 항목은 이미 마이그레이션 완료 → 제외)
-
-분리 가능한 도메인이 하나도 없으면 아래 메시지를 출력하고 **즉시 종료**한다.
+If the `domains` array is empty, output the following and **exit immediately**:
 
 ```
-분리 가능한 도메인이 없습니다. 모든 도메인이 이미 마이그레이션되었습니다.
+No domains registered.
 ```
 
-필터링된 목록을 `migratable_domains`로 메모리에 저장한다.
+**Filter migratable domains:**
 
-### Step 3: 대상 도메인 선택
+Extract only items with a `path` field from the `domains` array. (Items with a `paths` field are already migrated → exclude.)
 
-`migratable_domains` 목록을 번호로 출력한다.
+If no migratable domains remain, output the following and **exit immediately**:
 
 ```
-분리할 도메인을 선택하세요:
+No migratable domains found. All domains are already migrated.
+```
 
-  1. <domain_name_1> — <description_1>  (경로: <path_1>)
-  2. <domain_name_2> — <description_2>  (경로: <path_2>)
+Store the filtered list as `migratable_domains` in memory.
+
+### Step 3: Select a target domain
+
+Display the `migratable_domains` list with numbers:
+
+```
+Select a domain to split:
+
+  1. <domain_name_1> — <description_1>  (path: <path_1>)
+  2. <domain_name_2> — <description_2>  (path: <path_2>)
   ...
 
-번호를 입력하세요:
+Enter a number:
 ```
 
-`description` 필드가 없는 도메인은 `—` 이후 부분을 생략한다.
+Omit the `— <description>` part for domains with no `description` field.
 
-사용자 입력을 받아 선택된 도메인을 `target_domain`으로 메모리에 저장한다.
+Wait for user input and store the selected domain as `target_domain` in memory.
 
-유효하지 않은 번호가 입력되면 재질의한다:
-
-```
-올바른 번호를 입력하세요 (1–<N>):
-```
-
-### Step 4: ontology.yaml 읽기
-
-Read 툴로 `.ontology/domains/<target_domain.path>` 파일을 읽는다.
-
-예: `.ontology/domains/ecommerce/ontology.yaml`
-
-파일에서 아래 항목을 추출해 메모리에 저장한다:
-
-- `domain`: 도메인 이름
-- `version`: 버전 (없으면 `1`로 기본값 사용)
-- `object_types`: 배열 (없으면 빈 배열)
-- `link_types`: 배열 (없으면 빈 배열)
-- `action_types`: 배열 (없으면 빈 배열)
-
-대상 디렉토리를 `target_dir`로 저장한다: `<target_domain.path>`에서 파일명을 제거한 경로.
-예: `path = ecommerce/ontology.yaml` → `target_dir = ecommerce`
-
-### Step 5: 분리 미리보기 출력
-
-아래 형식으로 미리보기를 출력한다.
+If an invalid number is entered, re-prompt:
 
 ```
-[<domain_name>] 분리 미리보기
+Please enter a valid number (1–<N>):
+```
 
-생성될 파일:
-  • .ontology/domains/<target_dir>/object_types.yaml  (<N>개 Object Types)
-  • .ontology/domains/<target_dir>/link_types.yaml    (<N>개 Link Types)
-  • .ontology/domains/<target_dir>/action_types.yaml  (<N>개 Action Types)
+### Step 4: Read ontology.yaml
 
-_index.yaml 변경:
+Use the Read tool to read `.ontology/domains/<target_domain.path>`.
+
+Example: `.ontology/domains/ecommerce/ontology.yaml`
+
+Extract and store in memory:
+
+- `domain`: domain name
+- `version`: version number (default `1` if absent)
+- `object_types`: array (empty array if absent)
+- `link_types`: array (empty array if absent)
+- `action_types`: array (empty array if absent)
+
+Derive `target_dir` by removing the filename from `<target_domain.path>`.
+Example: `path = ecommerce/ontology.yaml` → `target_dir = ecommerce`
+
+### Step 5: Output migration preview
+
+```
+[<domain_name>] Migration Preview
+
+Files to be created:
+  • .ontology/domains/<target_dir>/object_types.yaml  (<N> Object Types)
+  • .ontology/domains/<target_dir>/link_types.yaml    (<N> Link Types)
+  • .ontology/domains/<target_dir>/action_types.yaml  (<N> Action Types)
+
+_index.yaml change:
   - path: <target_domain.path>
   + paths:
       object_types: <target_dir>/object_types.yaml
       link_types: <target_dir>/link_types.yaml
       action_types: <target_dir>/action_types.yaml
 
-진행할까요? (y/n)
+Proceed? (y/n)
 ```
 
-`<N>`은 각 배열의 항목 수다. 빈 배열이면 `0`을 출력한다.
+`<N>` is the count of items in each array. Output `0` for empty arrays.
 
-- `n` → 아래 메시지를 출력하고 **종료**:
+- `n` → output and **exit**:
   ```
-  취소되었습니다.
+  Cancelled.
   ```
-- `y` → Step 6으로 진행.
+- `y` → proceed to Step 6.
 
-### Step 6: 분리 파일 생성
+### Step 6: Create split files
 
-#### 6-A: object_types.yaml 생성
+#### 6-A: Create object_types.yaml
 
-Write 툴로 `.ontology/domains/<target_dir>/object_types.yaml`을 생성한다.
+Use the Write tool to create `.ontology/domains/<target_dir>/object_types.yaml`.
 
-`object_types` 배열이 비어있지 않은 경우:
+If `object_types` is not empty:
 ```yaml
 domain: <domain_name>
 version: <version>
 object_types:
-  # 기존 object_types 내용 그대로
+  # existing object_types content verbatim
 ```
 
-`object_types` 배열이 비어있는 경우:
+If `object_types` is empty:
 ```yaml
 domain: <domain_name>
 version: <version>
 object_types: []
 ```
 
-#### 6-B: link_types.yaml 생성
+#### 6-B: Create link_types.yaml
 
-Write 툴로 `.ontology/domains/<target_dir>/link_types.yaml`을 생성한다.
+Use the Write tool to create `.ontology/domains/<target_dir>/link_types.yaml`.
 
-`link_types` 배열이 비어있지 않은 경우:
+If `link_types` is not empty:
 ```yaml
 domain: <domain_name>
 version: <version>
 link_types:
-  # 기존 link_types 내용 그대로
+  # existing link_types content verbatim
 ```
 
-`link_types` 배열이 비어있는 경우:
+If `link_types` is empty:
 ```yaml
 domain: <domain_name>
 version: <version>
 link_types: []
 ```
 
-#### 6-C: action_types.yaml 생성
+#### 6-C: Create action_types.yaml
 
-Write 툴로 `.ontology/domains/<target_dir>/action_types.yaml`을 생성한다.
+Use the Write tool to create `.ontology/domains/<target_dir>/action_types.yaml`.
 
-`action_types` 배열이 비어있지 않은 경우:
+If `action_types` is not empty:
 ```yaml
 domain: <domain_name>
 version: <version>
 action_types:
-  # 기존 action_types 내용 그대로
+  # existing action_types content verbatim
 ```
 
-`action_types` 배열이 비어있는 경우:
+If `action_types` is empty:
 ```yaml
 domain: <domain_name>
 version: <version>
 action_types: []
 ```
 
-### Step 7: `_index.yaml` 업데이트
+### Step 7: Update `_index.yaml`
 
-Read 툴로 `.ontology/domains/_index.yaml`의 현재 내용을 다시 읽는다.
+Re-read `.ontology/domains/_index.yaml` with the Read tool.
 
-Edit 툴로 해당 도메인 항목의 `path` 필드를 `paths` 블록으로 교체한다.
+Use the Edit tool to replace the domain entry's `path` field with a `paths` block.
 
-**변경 전 (`old_string` — `path` 줄만 포함):**
+**Before (`old_string` — the path line only):**
 ```yaml
   path: <target_domain.path>
 ```
 
-**변경 후 (`new_string`):**
+**After (`new_string`):**
 ```yaml
   paths:
     object_types: <target_dir>/object_types.yaml
@@ -192,18 +190,18 @@ Edit 툴로 해당 도메인 항목의 `path` 필드를 `paths` 블록으로 교
   last_modified: <today_date>
 ```
 
-`<today_date>`는 오늘 날짜를 `YYYY-MM-DD` 형식으로 사용한다.
+Use today's date in `YYYY-MM-DD` format for `<today_date>`.
 
-`description` 등 기타 필드는 그대로 유지한다.
+Leave all other fields (`description`, `name`, etc.) unchanged.
 
-### Step 8: 마이그레이션 로그 기록
+### Step 8: Write migration log
 
-Write 툴로 `.ontology/migrations/YYYY-MM-DD-split-<domain_name>.log` 파일을 생성한다.
+Use the Write tool to create `.ontology/migrations/YYYY-MM-DD-split-<domain_name>.log`.
 
-파일명의 날짜는 오늘 날짜를 `YYYY-MM-DD` 형식으로 사용한다.
-예: `.ontology/migrations/2026-03-30-split-ecommerce.log`
+Use today's date in `YYYY-MM-DD` format in the filename.
+Example: `.ontology/migrations/2026-03-30-split-ecommerce.log`
 
-로그 파일 내용:
+Log file content:
 
 ```
 date: <today_date>
@@ -222,43 +220,41 @@ index_updated: .ontology/domains/_index.yaml
   path -> paths (object_types, link_types, action_types)
 ```
 
-### Step 9: 완료 안내
-
-아래 메시지를 출력한다.
+### Step 9: Completion message
 
 ```
-✓ [<domain_name>] 마이그레이션 완료
+✓ [<domain_name>] Migration complete
 
-생성된 파일:
+Files created:
   • .ontology/domains/<target_dir>/object_types.yaml
   • .ontology/domains/<target_dir>/link_types.yaml
   • .ontology/domains/<target_dir>/action_types.yaml
 
-_index.yaml 업데이트 완료 (path → paths)
-로그: .ontology/migrations/<log_filename>
+_index.yaml updated (path → paths)
+Log: .ontology/migrations/<log_filename>
 
-기존 파일은 직접 삭제하세요:
+Delete the original file manually when ready:
   rm .ontology/domains/<target_domain.path>
 ```
 
-### Step 10: 글로벌 싱크 체크
+### Step 10: Global sync check
 
-Glob `.ontology/config.yaml` → 없으면 건너뜀. 있으면 Read 후 `global_sync`, `global_path` 확인.
+Glob `.ontology/config.yaml` → if missing, skip. If present, Read and check `global_sync` and `global_path`.
 
-- `ask` → `"글로벌 저장소(<global_path>)에도 반영할까요? (y/n)"` → y=실행, n=건너뜀
-- `auto` → 즉시 실행
-- `off` 또는 config.yaml 없으면 → 건너뜀
+- `ask` → `"Sync to global store (<global_path>) as well? (y/n)"` → y=proceed, n=skip
+- `auto` → proceed immediately
+- `off` or config.yaml missing → skip
 
-**실행**: `object_types.yaml`, `link_types.yaml`, `action_types.yaml`을 `<global_path>/domains/<domain_name>/`에 Write 복사. `_index.yaml`도 `<global_path>/domains/`에 덮어쓰기.
+**Proceed**: Write-copy `object_types.yaml`, `link_types.yaml`, and `action_types.yaml` to `<global_path>/domains/<domain_name>/`. Also overwrite `_index.yaml` at `<global_path>/domains/`.
 
 ---
 
 ## Common Mistakes
 
-- **`paths` 도메인 제외 누락** → `paths` 필드가 이미 있는 도메인은 Step 2에서 반드시 제외한다.
-- **`target_dir` 추출 오류** → `path: ecommerce/ontology.yaml` → `target_dir = ecommerce`. 중첩 경로(예: `shop/v2/ontology.yaml` → `shop/v2`)도 정확히 처리한다.
-- **기존 타입 배열 내용 누락** → 분리 파일 생성 시 원본 배열 항목을 그대로 복사한다.
-- **`_index.yaml` 교체 시 기타 필드 손실** → `path` 줄만 정확히 교체한다. `description`, `name` 등 나머지 필드는 유지.
-- **Edit `old_string`에 `last_modified` 포함 금지** → 날짜 불일치로 매칭 실패. `path` 줄(`  path: <value>`)만 교체 대상.
-- **Edit `old_string` 들여쓰기** → 2칸 공백과 정확히 일치해야 한다.
-- **원본 파일 자동 삭제 금지** → 기존 `ontology.yaml` 삭제는 사용자에게 안내만 한다.
+- **Not excluding already-migrated domains** → Domains with a `paths` field must be excluded in Step 2.
+- **Wrong `target_dir` extraction** → `path: ecommerce/ontology.yaml` → `target_dir = ecommerce`. Handle nested paths correctly (e.g. `shop/v2/ontology.yaml` → `shop/v2`).
+- **Losing original type array content** → Copy the source array items verbatim into the split files.
+- **Losing other fields when replacing in `_index.yaml`** → Replace only the `path` line. Leave `description`, `name`, and other fields unchanged.
+- **Including `last_modified` in `old_string`** → The date value may not match. Use only the `path` line (`  path: <value>`) as the match target.
+- **Wrong indentation in `old_string`** → Must exactly match 2-space indentation.
+- **Auto-deleting the original file** → Never delete the original `ontology.yaml`. Only inform the user and let them delete it manually.

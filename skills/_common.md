@@ -113,5 +113,17 @@ global_sync에 따라:
    new: "object_types:\n  - name: ..."
    ```
 3. **last_modified 갱신**: YAML 파일 수정 후 반드시 `_index.yaml`의 해당 도메인 `last_modified`를 오늘 날짜(YYYY-MM-DD)로 갱신한다.
-4. **description 빈 값**: 설명이 없으면 `description: ""`가 아닌 필드 자체를 생략한다.
+4. **description 빈 값**: 설명이 없으면 `description: ""`가 아닌 필드 자체를 생략한다. (타입 수준 및 property 수준 모두 동일)
 5. **false 필드 생략**: `primary: false`, `computed: false`는 명시하지 않는다. `true`일 때만 포함한다.
+6. **property description**: 각 property에 선택적으로 `description`을 기재한다. 허용값이 정해진 필드는 `"허용값: A, B, C"` 형식을 권장한다. 없으면 필드 생략.
+
+**Object Type property 스키마 (전체):**
+```yaml
+properties:
+  - name: <snake_case>
+    type: string|int|float|boolean|date|datetime
+    description: "<필드의 의미, 허용값, 비즈니스 맥락 등>"  # 선택 (없으면 생략)
+    primary: true       # primary=true인 경우만
+    computed: true      # computed=true인 경우만
+    expression: "<식>"  # computed=true이고 expression이 있을 때만
+```

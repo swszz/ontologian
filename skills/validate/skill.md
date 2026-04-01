@@ -74,6 +74,7 @@ domain_data[domain_name] = {
 |------|------|
 | `name` | 필수 |
 | `type` | 필수. 허용값: `string`, `int`, `float`, `boolean`, `date`, `datetime`. `integer`는 `int`의 별칭으로 허용 (오류로 처리하지 않음) |
+| `description` | 선택. 없으면 경고(warning, 오류는 아님): `[ObjectType명.property명] description이 없습니다. 필드 의미를 기록하면 지식 유지에 도움이 됩니다.` |
 | `computed` | 선택. `true`이면 `expression` 필드의 존재 여부를 확인한다. 없으면 경고(warning, 오류는 아님): `computed 속성 '<name>'에 expression이 없습니다.` |
 
 #### Link Type 검증
@@ -146,6 +147,13 @@ domain_data[domain_name] = {
 [ecommerce] Action Type 'send_email' > parameter 'index 0': name 필드 없음
 ```
 
+warning 예시:
+
+```
+⚠ [ecommerce] Object Type 'Product' > property 'price': description이 없습니다. 필드 의미를 기록하면 지식 유지에 도움이 됩니다.
+⚠ [ecommerce] Object Type 'User' > property 'status': description이 없습니다. 필드 의미를 기록하면 지식 유지에 도움이 됩니다.
+```
+
 ### Step 5: 참조 무결성 검증
 
 각 도메인에서 해당 도메인의 `object_types` 이름 목록(`object_names`)을 먼저 수집한다.
@@ -204,10 +212,20 @@ domain_data[domain_name] = {
 
 ### Step 7: 결과 출력
 
-**모든 도메인에서 오류가 없는 경우:**
+**모든 도메인에서 오류가 없는 경우 (warning 없음):**
 
 ```
 ✓ 모든 도메인 검증 통과 (<N>개 도메인, <N> Objects, <N> Links, <N> Actions)
+```
+
+**오류는 없지만 warning이 있는 경우:**
+
+```
+✓ 검증 통과 — 단, <W>개 권고사항 있음
+
+⚠ <warning1>
+⚠ <warning2>
+...
 ```
 
 `N` 값은 모든 도메인을 합산한 총 개수다.
@@ -224,6 +242,15 @@ domain_data[domain_name] = {
 ...
 ```
 
+오류 뒤에 warning이 있으면 오류 목록 다음에 아래와 같이 이어서 출력한다:
+
+```
+⚠ 권고사항 (<W>개)
+⚠ <warning1>
+⚠ <warning2>
+...
+```
+
 오류는 수집된 순서대로 출력한다. 각 오류 항목 사이에 빈 줄을 넣는다.
 
 ---
@@ -234,3 +261,4 @@ domain_data[domain_name] = {
 - **name 없는 항목의 참조 검증** → `name`이 없는 항목은 스키마 오류로 기록하고 참조 검증에서는 건너뛴다.
 - **오류 카운트 불일치** → 헤더의 `N개 오류 발견`은 `errors` 목록의 실제 항목 수와 정확히 일치해야 한다.
 - **통과 메시지 합계** → Objects/Links/Actions 수는 모든 도메인의 합산값 (도메인별 수가 아님).
+- **warning과 오류 혼용 금지** → property description 누락은 `errors`가 아닌 `warnings`에 추가한다. 오류 카운트에 포함하지 않는다.

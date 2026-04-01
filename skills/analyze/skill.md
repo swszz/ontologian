@@ -90,7 +90,10 @@ uncertain_items: []
 - `properties`: 귀속 속성 목록
   - `type` 추론: 이메일→`string`, 횟수→`int`, 금액→`float`, 날짜→`datetime`
   - 식별자 속성 → `primary: true`
-  - **상태 속성** (status, state, type 등): 허용값 명확하면 `description`에 `"허용값: X, Y, Z"` 기재, 불명확하면 `uncertain_items`에 `missing_enum_values` 추가
+  - **property description**: 요구사항에서 해당 필드의 의미나 맥락을 파악할 수 있으면 `description`에 한 문장으로 기재한다. 파악 불가 시 생략.
+    - **상태 속성** (status, state, type 등): 허용값 명확하면 `description`에 `"허용값: X, Y, Z"` 형식으로 기재, 불명확하면 `uncertain_items`에 `missing_enum_values` 추가
+    - **computed 속성**: `expression` 의미를 `description`에 한 문장으로 설명 (예: `"settlement_items의 gross_amount 합산"`)
+    - **일반 속성**: 이름만으로 의미가 자명한 경우 생략 가능, 도메인 특수 맥락이 있으면 기재 권장
   - 파생값 → `computed: true`, 식이 명확하면 `expression` 추론, 불명확하면 `uncertain_items`에 `missing_computed_expression` 추가
   - **FK 속성 추가 금지**: 다른 Object Type 참조용 외래키(예: merchant_id, order_id)는 포함하지 않는다. 관계는 4-B에서 Link Type으로 표현.
 - `confidence`: `high` / `low`
@@ -458,6 +461,9 @@ object_types:
       - name: user_id
         type: string
         primary: true
+      - name: status
+        type: string
+        description: "계정 상태. 허용값: active, inactive, suspended"
   ...
 
 # Link Types (N개)

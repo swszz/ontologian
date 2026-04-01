@@ -129,6 +129,13 @@ Read: .ontology/domains/_index.yaml
      계산식을 입력하세요 (예: "gross_amount - fee", 모르면 빈칸 엔터로 건너뜀):
      ```
      입력값이 있으면 `expression` 필드에 저장한다.
+
+   그 다음 description을 질문한다:
+   ```
+   이 필드의 설명을 입력하세요 (의미·허용값·맥락 등, 생략하려면 빈칸 엔터):
+   ```
+   입력값이 있으면 해당 property의 `description` 필드에 저장한다. 빈칸이면 필드를 생략한다.
+
    - Property를 하나 이상 수집한 후 이름 입력에서 빈칸 엔터가 오면 수집 종료.
 
 수집된 데이터를 `new_entry` 객체로 메모리에 저장:
@@ -138,6 +145,7 @@ description: "<설명>"      # 설명이 있는 경우만 포함
 properties:
   - name: <property_name>
     type: <type>
+    description: "<설명>"  # 설명이 입력된 경우만 포함
     primary: true           # primary=true인 경우만 포함
     computed: true          # computed=true인 경우만 포함
     expression: "<식>"      # computed=true이고 expression이 입력된 경우만 포함
@@ -310,6 +318,10 @@ parameters:                 # 파라미터가 하나 이상인 경우만 포함
       primary: true
     - name: price
       type: float
+      description: "판매 가격 (원화 기준)"
+    - name: status
+      type: string
+      description: "상품 상태. 허용값: active, inactive, discontinued"
 ```
 
 **Link Type 예시:**

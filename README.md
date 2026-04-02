@@ -36,6 +36,7 @@ Run inside Claude Code:
 
 | Command | Description |
 |---|---|
+| `/ontologian:consult` | **Start a Palantir-grade ontology consulting session** — guided discovery, design, construction, and governance documentation |
 | `/ontologian` | Show domain list and status summary |
 | `/ontologian:add` | Interactively add a new type to a domain |
 | `/ontologian:analyze` | Derive ontology structure from free-form requirements |
@@ -44,6 +45,23 @@ Run inside Claude Code:
 | `/ontologian:sync` | Sync local `.ontology/` to the global store |
 | `/ontologian:migrate` | Split a domain's single file into per-type files |
 | `/ontologian:visualize` | Render an ASCII relationship diagram |
+
+### Consulting Agent
+
+The plugin includes an `ontology-consultant` agent that activates in two ways:
+
+- **Proactively** — when you describe business requirements, system design, or domain entities, the agent automatically offers to model them as an ontology
+- **Explicitly** — run `/ontologian:consult` to start a full consulting session immediately
+
+The consulting session covers 5 phases:
+
+| Phase | What happens |
+|---|---|
+| **Discovery** | 5-axis structured interview: entities, relationships, processes, boundaries, governance |
+| **Modeling** | Autonomous candidate derivation using the same rules as `/ontologian:analyze` |
+| **Design** | Palantir enrichment patterns: object enrichment, state machine audit, semantic naming review, governance metadata |
+| **Construction** | Writes all domain files in dependency order, runs automatic validation |
+| **Delivery** | Renders ASCII diagrams for all domains, generates `.ontology/CONSULT_REPORT.md` |
 
 ---
 
@@ -81,7 +99,7 @@ object_types:
         description: "Sale price in KRW"
       - name: status
         type: string
-        description: "허용값: active, inactive, discontinued"
+        description: "Allowed values: active, inactive, discontinued"
 
 link_types:
   - name: places

@@ -18,21 +18,23 @@ Adds Ontologian's GitHub repo as a known marketplace source in `~/.claude/settin
 
 **Requires:** `jq` or `python3`.
 
-### Step 2 — Install the plugin
+### Step 2 — Install commands & agent
 
 Run inside Claude Code:
 
 ```
-/plugin install ontologian@ontologian-marketplace
+/plugin install ontologian@ontologian
 ```
 
-Installs commands and the consulting agent from the marketplace.
+Installs 9 slash commands (`/ontologian`, `/ontologian:add`, `/ontologian:analyze`, ...) and the `ontology-consultant` proactive agent.
 
 ### Update
 
 ```
-/plugin update ontologian@ontologian-marketplace
+/plugin update ontologian@ontologian
 ```
+
+No need to re-run `setup.sh` — this updates commands and agent only.
 
 ---
 

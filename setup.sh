@@ -5,7 +5,7 @@ SETTINGS_FILE="$HOME/.claude/settings.json"
 
 NEW_ENTRY='{
   "extraKnownMarketplaces": {
-    "ontologian-marketplace": {
+    "ontologian": {
       "source": {
         "source": "github",
         "repo": "swszz/ontologian"

@@ -96,34 +96,33 @@ The consulting session covers 6 phases:
 
 ```
 ontologian/
-├── skills/                      # Operation logic — single source of truth
-│   ├── status.md                # domain list & summary
-│   ├── add.md
-│   ├── analyze.md
-│   ├── validate.md
-│   ├── search.md
-│   ├── sync.md
-│   ├── migrate.md
-│   └── visualize.md
-├── commands/                    # Thin entry points — invoke the corresponding skill
-│   ├── ontologian.md            # /ontologian  → status skill
-│   └── ontologian/              # /ontologian:<name> → <name> skill
-│       ├── add.md
-│       ├── analyze.md
-│       ├── consult.md           # → ontology-consultant agent
-│       ├── migrate.md
-│       ├── search.md
-│       ├── sync.md
-│       ├── validate.md
-│       └── visualize.md
-├── agents/
-│   └── ontology-consultant.md   # Proactive agent — orchestrates skills
-├── hooks/
-│   └── hooks.json
-└── setup.sh                     # Marketplace registration script
+├── .claude-plugin/
+│   └── marketplace.json         # Marketplace manifest (repo root only)
+├── plugin/                      # Plugin content (installed via git-subdir)
+│   ├── .claude-plugin/
+│   │   └── plugin.json
+│   ├── skills/                  # Operation logic — single source of truth
+│   │   ├── status.md
+│   │   ├── add.md
+│   │   ├── analyze.md
+│   │   ├── validate.md
+│   │   ├── search.md
+│   │   ├── sync.md
+│   │   ├── migrate.md
+│   │   └── visualize.md
+│   ├── commands/                # Thin entry points — delegate to skills
+│   │   ├── ontologian.md        # /ontologian
+│   │   └── ontologian/          # /ontologian:<name>
+│   │       └── *.md
+│   ├── agents/
+│   │   └── ontology-consultant.md
+│   └── hooks/
+│       └── hooks.json
+├── setup.sh                     # Marketplace registration script
+└── README.md
 ```
 
-**Architecture:** skills hold all logic. Commands and agent delegate to skills. To modify behavior, edit `skills/` only.
+**Architecture:** `marketplace.json` lives at the repo root. The plugin is installed from `plugin/` subdirectory — this prevents recursive cloning. To modify behavior, edit `plugin/skills/` only.
 
 ---
 

@@ -11,7 +11,13 @@
     {
       "name": "ontologian",
       "description": "Palantir ontology concepts (Object Type, Link Type, Action Type) for knowledge management in Claude Code",
-      "version": "1.4.0"
+      "version": "1.4.0",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/swszz/ontologian.git",
+        "path": "plugin",
+        "ref": "main"
+      }
     }
   ]
 }

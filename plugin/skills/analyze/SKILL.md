@@ -1,6 +1,6 @@
 ---
-name: analyze
-description: Use when the user runs /ontologian:analyze or wants to derive an ontology structure from free-form business requirements text.
+name: ontologian-analyze
+description: Use when the user runs /ontologian-analyze or wants to derive an ontology structure from free-form business requirements text.
 ---
 
 # Ontologian — Analyze

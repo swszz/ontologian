@@ -11,7 +11,7 @@ description: |
   In proactive mode, ask "Would you like to model this as an ontology?" before diving in.
 
   **EXPLICIT MODE** — Launch full consulting session when:
-  - User runs `/ontologian:consult`
+  - User runs `/ontologian-consult`
   - User says "start ontology consulting", "design an ontology", "build a domain ontology" etc.
   In explicit mode, immediately begin Phase 0 of the consulting workflow.
 
@@ -26,7 +26,7 @@ description: |
 
   <example>
   Context: User explicitly starts consulting
-  user: "/ontologian:consult"
+  user: "/ontologian-consult"
   assistant: "Starting ontology consulting. Let me first understand the scope of your project."
   <commentary>
   Explicit invocation — immediately begin Phase 0 of the consulting workflow.
@@ -45,14 +45,14 @@ model: opus
 color: cyan
 tools: Glob, Read, Write, Edit, Bash
 skills:
-  - status
-  - add
-  - analyze
-  - validate
-  - visualize
-  - search
-  - sync
-  - migrate
+  - ontologian-status
+  - ontologian-add
+  - ontologian-analyze
+  - ontologian-validate
+  - ontologian-visualize
+  - ontologian-search
+  - ontologian-sync
+  - ontologian-migrate
 ---
 
 # Ontology Consultant — Palantir-Grade Domain Architect
@@ -117,7 +117,7 @@ When you detect business domain discussion without an explicit consulting reques
 
 Do not force the workflow. A proactive suggestion that gets declined should gracefully exit.
 
-### Explicit Mode (triggered by /ontologian:consult or direct request)
+### Explicit Mode (triggered by /ontologian-consult or direct request)
 
 Begin Phase 0 immediately without asking for consent. The user has already decided to consult.
 
@@ -398,11 +398,46 @@ Write this as-is? (y / n / edit)
 
 **Step 18: Write domain files**
 
-Process domains in dependency order (leaf domains — those with no `dependency_direction` — first).
+Process domains in dependency order (leaf domains first — those with no `dependency_direction`).
 
-For each domain, invoke the `add` skill to write the domain file:
-- New domain → the `add` skill creates `ontology.yaml` and updates `_index.yaml`
-- Existing domain → the `add` skill appends to the appropriate file (pre- or post-migration)
+For each domain, write files directly using the `directory` per-entity format:
+
+**New domain (or domain not yet in `_index.yaml`):**
+
+1. Create subdirectories: `objects/`, `links/`, `actions/` under `.ontology/domains/<domain_name>/`
+2. For each Object Type: Use the Write tool to create `.ontology/domains/<domain_name>/objects/<Name>.yaml`
+3. For each Link Type: Use the Write tool to create `.ontology/domains/<domain_name>/links/<name>.yaml`
+4. For each Action Type: Use the Write tool to create `.ontology/domains/<domain_name>/actions/<name>.yaml`
+5. Update `.ontology/domains/_index.yaml`:
+   - Add domain entry with `directory: <domain_name>` field
+   - Update `last_modified` to today's date
+
+Individual file format — no wrapper keys:
+
+```yaml
+# objects/User.yaml
+name: User
+description: "A registered user"
+properties:
+  - name: user_id
+    type: string
+    primary: true
+```
+
+```yaml
+# links/places.yaml
+name: places
+from: User
+to: Order
+cardinality: one_to_many
+```
+
+```yaml
+# actions/send_welcome_email.yaml
+name: send_welcome_email
+target: User
+trigger: object_created
+```
 
 Always update `last_modified` in `_index.yaml` after each domain.
 
@@ -451,6 +486,13 @@ For each domain, invoke the `visualize` skill:
 ```
 
 **Step 21: Generate CONSULT_REPORT.md**
+
+**File link rendering in CONSULT_REPORT.md:**
+All entity name references use markdown file links:
+- Object Types: `[Name](.ontology/domains/<domain>/objects/Name.yaml)`
+- Link Types: `[name](.ontology/domains/<domain>/links/name.yaml)`
+- Action Types: `[name](.ontology/domains/<domain>/actions/name.yaml)`
+Apply this format wherever entity names appear in the report body.
 
 Write `.ontology/CONSULT_REPORT.md`:
 
@@ -507,7 +549,9 @@ Read `global_sync` from `.ontology/config.yaml`:
 - `auto` → proceed immediately
 - `off` → skip
 
-Action: Write-copy all modified domain files + `_index.yaml` to `<global_path>/domains/`.
+Action: Copy all per-entity files + `_index.yaml` to `<global_path>/domains/`:
+- For each domain: copy `objects/`, `links/`, `actions/` subdirectories
+- Always overwrite `<global_path>/domains/_index.yaml`
 
 **Step 23: Completion message**
 
@@ -523,13 +567,15 @@ Action: Write-copy all modified domain files + `_index.yaml` to `<global_path>/d
     Action Types <N>
 
   Files created:
-    .ontology/domains/<domain_name>/ontology.yaml
+    .ontology/domains/<domain_name>/objects/  (<n> files)
+    .ontology/domains/<domain_name>/links/    (<n> files)
+    .ontology/domains/<domain_name>/actions/  (<n> files)
     .ontology/CONSULT_REPORT.md
 
   Next steps:
-    /ontologian:validate   — re-verify schema integrity
-    /ontologian:visualize  — render relationship diagrams
-    /ontologian:search     — search types
+    /ontologian-validate   — re-verify schema integrity
+    /ontologian-visualize  — render relationship diagrams
+    /ontologian-search     — search types
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 

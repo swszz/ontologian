@@ -1,14 +1,19 @@
 ---
-name: migrate
-description: Use when the user runs /ontologian:migrate or wants to split a domain's single ontology.yaml into separate object_types.yaml, link_types.yaml, and action_types.yaml files.
+name: ontologian-migrate
+description: Use when the user runs /ontologian-migrate to upgrade a domain from the old single-file or per-type format to the new per-entity format (one file per Object Type, Link Type, and Action Type).
 ---
 
 # Ontologian — Migrate
 
 ## Overview
 
-Split a domain's single `ontology.yaml` into three separate files: `object_types.yaml`, `link_types.yaml`, and `action_types.yaml`.
-Domains that already have a `paths` field are already migrated and are excluded from the target list.
+Migrate an ontology domain from the legacy single-file format (`path`) or per-type format (`paths`) to the new per-entity format (`directory`):
+
+- Old `path` format: `.ontology/domains/<domain>/ontology.yaml` (all types in one file)
+- Old `paths` format: `.ontology/domains/<domain>/object_types.yaml`, `link_types.yaml`, `action_types.yaml`
+- New `directory` format: `.ontology/domains/<domain>/objects/<Name>.yaml`, `links/<name>.yaml`, `actions/<name>.yaml`
+
+Domains already using the `directory` format are skipped.
 
 ---
 
@@ -20,276 +25,195 @@ Glob `.ontology/domains/_index.yaml` → if missing, output `"Ontology is not in
 
 ### Step 2: Read `_index.yaml`
 
-Use the Read tool to read `.ontology/domains/_index.yaml`.
-
-Store the `domains` array in memory.
-
-If the `domains` array is empty, output the following and **exit immediately**:
+Read `.ontology/domains/_index.yaml`. If the `domains` array is empty, output:
 
 ```
-No domains registered.
+No domains registered. Nothing to migrate.
 ```
 
-**Filter migratable domains:**
+And exit.
 
-Extract only items with a `path` field from the `domains` array. (Items with a `paths` field are already migrated → exclude.)
+### Step 3: Select a domain
 
-If no migratable domains remain, output the following and **exit immediately**:
-
-```
-No migratable domains found. All domains are already migrated.
-```
-
-Store the filtered list as `migratable_domains` in memory.
-
-### Step 3: Select a target domain
-
-Display the `migratable_domains` list with numbers:
+Display the list of domains that are eligible for migration (those with `path` or `paths` — **not** those with `directory`):
 
 ```
-Select a domain to split:
+Select a domain to migrate:
 
-  1. <domain_name_1> — <description_1>  (path: <path_1>)
-  2. <domain_name_2> — <description_2>  (path: <path_2>)
+  1. <domain_name> — <description> [path format]
+  2. <domain_name> — <description> [paths format]
   ...
+  A. Migrate all eligible domains
 
-Enter a number:
+Enter a number (or A):
 ```
 
-Omit the `— <description>` part for domains with no `description` field.
-
-Wait for user input and store the selected domain as `target_domain` in memory.
-
-If an invalid number is entered, re-prompt:
+If no eligible domains exist, output:
 
 ```
-Please enter a valid number (1–<N>):
+All domains are already using the per-entity format. Nothing to migrate.
 ```
 
-### Step 4: Read ontology.yaml
+And exit.
 
-Use the Read tool to read `.ontology/domains/<target_domain.path>`.
+Wait for user input. Store the selected domain(s) as `targets`.
 
-Example: `.ontology/domains/ecommerce/ontology.yaml`
+### Step 4: Read source data
 
-Extract and store in memory:
+For each target domain:
 
-- `domain`: domain name
-- `version`: version number (default `1` if absent)
-- `object_types`: array (empty array if absent)
-- `link_types`: array (empty array if absent)
-- `action_types`: array (empty array if absent)
+**If `path` field present** (single file):
+Read `.ontology/domains/<path>`. Extract:
+- `object_types` array (default `[]`)
+- `link_types` array (default `[]`)
+- `action_types` array (default `[]`)
+- `description`, `domain_owner`, `stability`, `semantic_version` (for reference)
 
-Derive `target_dir` by removing the filename from `<target_domain.path>`.
-Example: `path = ecommerce/ontology.yaml` → `target_dir = ecommerce`
+**If `paths` field present** (per-type files):
+Read `.ontology/domains/<paths.object_types>`, `.ontology/domains/<paths.link_types>`, `.ontology/domains/<paths.action_types>`.
+Extract the corresponding arrays from each file.
 
-### Step 5: Output migration preview
+Store as `source_data[domain_name] = { object_types, link_types, action_types }`.
+
+### Step 5: Preview migration
+
+Show what will be created for each target domain:
 
 ```
-[<domain_name>] Migration Preview
+Migration preview — <domain_name>:
 
-Files to be created:
-  • .ontology/domains/<target_dir>/object_types.yaml  (<N> Object Types)
-  • .ontology/domains/<target_dir>/link_types.yaml    (<N> Link Types)
-  • .ontology/domains/<target_dir>/action_types.yaml  (<N> Action Types)
+  Objects  (<n>):  objects/<Name>.yaml  × <n>
+  Links    (<n>):  links/<name>.yaml    × <n>
+  Actions  (<n>):  actions/<name>.yaml  × <n>
 
-_index.yaml change:
-  - path: <target_domain.path>
-  + paths:
-      object_types: <target_dir>/object_types.yaml
-      link_types: <target_dir>/link_types.yaml
-      action_types: <target_dir>/action_types.yaml
-
-Proceed? (y/n)
+  _index.yaml: `path`/`paths` → `directory: <domain_name>`
 ```
 
-`<N>` is the count of items in each array. Output `0` for empty arrays.
+Then ask:
 
-- `n` → output and **exit**:
-  ```
-  Cancelled.
-  ```
-- `y` → proceed to Step 6.
+```
+Proceed? (y / n)
+```
 
-### Step 6: Create split files
+- `n` → Output `Cancelled.` and exit.
+- `y` → Proceed to Step 6.
 
-#### 6-A: Create object_types.yaml
+### Step 6: Write per-entity files
 
-Use the Write tool to create `.ontology/domains/<target_dir>/object_types.yaml`.
+For each target domain, process in order: Object Types → Link Types → Action Types.
 
-If `object_types` is not empty:
+#### 6-A: Object Types
+
+For each item in `object_types`:
+
+Use the Write tool to create `.ontology/domains/<domain_name>/objects/<Name>.yaml`:
+
 ```yaml
-domain: <domain_name>
-version: <version>
-object_types:
-  # existing object_types content verbatim
+name: <Name>
+description: "<description>"  # only if present
+properties:
+  - name: <property_name>
+    type: <type>
+    description: "<description>"  # only if present
+    primary: true                  # only when true
+    computed: true                 # only when true
+    expression: "<expr>"           # only when computed=true and present
 ```
 
-If `object_types` is empty:
+Omit `description` at any level if not present. Omit `primary`/`computed` unless `true`.
+
+#### 6-B: Link Types
+
+For each item in `link_types`:
+
+Use the Write tool to create `.ontology/domains/<domain_name>/links/<name>.yaml`:
+
 ```yaml
-domain: <domain_name>
-version: <version>
-object_types: []
+name: <name>
+from: <ObjectType>
+to: <ObjectType>
+cardinality: <cardinality>
+description: "<description>"  # only if present
 ```
 
-#### 6-B: Create link_types.yaml
+#### 6-C: Action Types
 
-Use the Write tool to create `.ontology/domains/<target_dir>/link_types.yaml`.
+For each item in `action_types`:
 
-If `link_types` is not empty:
+Use the Write tool to create `.ontology/domains/<domain_name>/actions/<name>.yaml`:
+
 ```yaml
-domain: <domain_name>
-version: <version>
-link_types:
-  # existing link_types content verbatim
+name: <name>
+description: "<description>"  # only if present
+target: <ObjectType>
+trigger: <trigger>
+trigger_condition:             # only when present
+  field: <field>
+  from: <value>                # only if present
+  to: <value>                  # only if present
+parameters:                    # only when at least one parameter
+  - name: <param>
+    type: <type>
+    required: false            # only when false; omit when true
 ```
-
-If `link_types` is empty:
-```yaml
-domain: <domain_name>
-version: <version>
-link_types: []
-```
-
-#### 6-C: Create action_types.yaml
-
-Use the Write tool to create `.ontology/domains/<target_dir>/action_types.yaml`.
-
-If `action_types` is not empty:
-```yaml
-domain: <domain_name>
-version: <version>
-action_types:
-  # existing action_types content verbatim
-```
-
-If `action_types` is empty:
-```yaml
-domain: <domain_name>
-version: <version>
-action_types: []
-```
-
-### Step 6-D: Integrity check before index update
-
-Before modifying `_index.yaml`, verify all three split files were successfully written.
-
-Use Glob to check each of the three files:
-- `.ontology/domains/<target_dir>/object_types.yaml`
-- `.ontology/domains/<target_dir>/link_types.yaml`
-- `.ontology/domains/<target_dir>/action_types.yaml`
-
-If any file is missing, output the following and **exit immediately** (do NOT proceed to Step 7):
-```
-✗ Migration aborted — one or more split files were not written successfully.
-
-  Missing files:
-    • .ontology/domains/<target_dir>/<missing_file>  ← not found
-
-  The original .ontology/domains/<target_domain.path> has not been modified.
-  The _index.yaml has not been modified.
-  Run /ontologian:migrate again to retry from scratch.
-```
-
-Only proceed to Step 7 if all three files exist.
 
 ### Step 7: Update `_index.yaml`
 
-Re-read `.ontology/domains/_index.yaml` with the Read tool.
+For each migrated domain, use the Edit tool to:
 
-Use the Edit tool to replace the domain entry's `path` field with a `paths` block.
+1. Remove the `path: ...` or `paths:` block from the domain entry in `_index.yaml`.
+2. Add `directory: <domain_name>` in its place.
+3. Update `last_modified` to today's date.
 
-**Before (`old_string` — the path line only):**
+The updated entry format:
 ```yaml
-  path: <target_domain.path>
+  - name: <domain_name>
+    description: "<description>"
+    domain_owner: "<owner>"
+    stability: <stability>
+    semantic_version: "<version>"
+    directory: <domain_name>
+    last_modified: <today_date>
 ```
 
-**After (`new_string`):**
-```yaml
-  paths:
-    object_types: <target_dir>/object_types.yaml
-    link_types: <target_dir>/link_types.yaml
-    action_types: <target_dir>/action_types.yaml
-  last_modified: <today_date>
-```
-
-Use today's date in `YYYY-MM-DD` format for `<today_date>`.
-
-Leave all other fields (`description`, `name`, etc.) unchanged.
-
-### Step 8: Write migration log
-
-Use the Write tool to create `.ontology/migrations/YYYY-MM-DD-split-<domain_name>.log`.
-
-Use today's date in `YYYY-MM-DD` format in the filename.
-Example: `.ontology/migrations/2026-03-30-split-ecommerce.log`
-
-Log file content:
+### Step 8: Offer to delete old files
 
 ```
-date: <today_date>
-domain: <domain_name>
-action: split ontology.yaml into separate type files
+Migration complete. Delete old source files? (y/n)
 
-source:
-  file: .ontology/domains/<target_domain.path>
-
-created:
-  - .ontology/domains/<target_dir>/object_types.yaml  (<N> object_types)
-  - .ontology/domains/<target_dir>/link_types.yaml    (<N> link_types)
-  - .ontology/domains/<target_dir>/action_types.yaml  (<N> action_types)
-
-index_updated: .ontology/domains/_index.yaml
-  path -> paths (object_types, link_types, action_types)
+  Files to delete:
+  - .ontology/domains/<old_path>   (e.g. ecommerce/ontology.yaml)
+    or
+  - .ontology/domains/<paths.object_types>
+  - .ontology/domains/<paths.link_types>
+  - .ontology/domains/<paths.action_types>
 ```
 
-### Step 9: Archive original file
+- `y` → Use the Bash tool to delete the old files: `rm <file_path>`
+- `n` → Skip deletion. The old files remain alongside the new structure.
 
-Prompt the user to delete the original `ontology.yaml`:
+### Step 9: Completion message
 
 ```
-✓ [<domain_name>] Migration complete
+✓ Migration complete — <domain_name>
 
-Files created:
-  • .ontology/domains/<target_dir>/object_types.yaml
-  • .ontology/domains/<target_dir>/link_types.yaml
-  • .ontology/domains/<target_dir>/action_types.yaml
+  Created:
+    objects/  <n> files
+    links/    <n> files
+    actions/  <n> files
 
-_index.yaml updated (path → paths)
-Log: .ontology/migrations/<log_filename>
+  _index.yaml updated: directory: <domain_name>
 
-The original file still exists:
-  .ontology/domains/<target_domain.path>
-
-Delete it now? (y/n — recommended: y)
+[i] Run /ontologian-validate to verify the migrated domain.
 ```
 
-- `y` → Use Bash to run: `rm ".ontology/domains/<target_domain.path>"`
-  Then output: `[✓] Original file deleted.`
-- `n` → Output:
-  ```
-  [i] Original file kept. Run /ontologian:validate to detect stale files.
-      Delete manually when ready: rm .ontology/domains/<target_domain.path>
-  ```
-
-### Step 10: Global sync check
-
-Glob `.ontology/config.yaml` → if missing, skip. If present, Read and check `global_sync` and `global_path`.
-
-- `ask` → `"Sync to global store (<global_path>) as well? (y/n)"` → y=proceed, n=skip
-- `auto` → proceed immediately
-- `off` or config.yaml missing → skip
-
-**Proceed**: Write-copy `object_types.yaml`, `link_types.yaml`, and `action_types.yaml` to `<global_path>/domains/<domain_name>/`. Also overwrite `_index.yaml` at `<global_path>/domains/`.
+If multiple domains were migrated, show one block per domain.
 
 ---
 
 ## Common Mistakes
 
-- **Not excluding already-migrated domains** → Domains with a `paths` field must be excluded in Step 2.
-- **Wrong `target_dir` extraction** → `path: ecommerce/ontology.yaml` → `target_dir = ecommerce`. Handle nested paths correctly (e.g. `shop/v2/ontology.yaml` → `shop/v2`).
-- **Losing original type array content** → Copy the source array items verbatim into the split files.
-- **Losing other fields when replacing in `_index.yaml`** → Replace only the `path` line. Leave `description`, `name`, and other fields unchanged.
-- **Including `last_modified` in `old_string`** → The date value may not match. Use only the `path` line (`  path: <value>`) as the match target.
-- **Wrong indentation in `old_string`** → Must exactly match 2-space indentation.
-- **Auto-deleting the original file** → Never delete the original `ontology.yaml`. Only inform the user and let them delete it manually.
+- **Migrating a `directory`-format domain** → Skip domains that already have a `directory` field. Only migrate `path` or `paths` domains.
+- **Forgetting to update `_index.yaml`** → Always replace `path`/`paths` with `directory` after writing files.
+- **Writing wrapper keys in per-entity files** → Each file contains the entity definition directly (no `object_types:` wrapper). The file IS the entity.
+- **Keeping `primary: false` or `computed: false`** → Omit these fields when false. Only include when `true`.

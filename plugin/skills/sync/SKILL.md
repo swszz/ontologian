@@ -1,6 +1,6 @@
 ---
-name: sync
-description: Use when the user runs /ontologian:sync or wants to manually sync local .ontology/ to the global ~/.ontologian/ directory.
+name: ontologian-sync
+description: Use when the user runs /ontologian-sync or wants to manually sync local .ontology/ to the global ~/.ontologian/ directory.
 ---
 
 # Ontologian — Sync
@@ -49,6 +49,7 @@ Collect the file list from each domain entry. For each entry, determine migratio
 
 - If `path` is present → 1 file: `<path>` (e.g. `ecommerce/ontology.yaml`)
 - If `paths` is present → add `paths.object_types`, `paths.link_types`, and `paths.action_types` to the list (e.g. `ecommerce/object_types.yaml`). Skip any missing keys.
+- If `directory` is present → new per-entity format: add all files under `.ontology/domains/<directory>/objects/`, `.ontology/domains/<directory>/links/`, and `.ontology/domains/<directory>/actions/` to the list.
 
 Store the collected file list as the `sync_files` array in memory.
 Also include `_index.yaml` itself as a sync target.
@@ -133,6 +134,21 @@ For each file:
 
 1. Use the Read tool to read the local file: `.ontology/domains/<file>`
 2. Use the Write tool to write to the global path: `<global_path>/domains/<file>`
+
+**If `directory` is present (new per-entity format):**
+Copy the entire domain directory to `<global_path>/domains/<domain_name>/`:
+- All files in `.ontology/domains/<directory>/objects/`
+- All files in `.ontology/domains/<directory>/links/`
+- All files in `.ontology/domains/<directory>/actions/`
+
+Use Bash:
+```
+cp -r .ontology/domains/<directory>/objects <global_path>/domains/<directory>/
+cp -r .ontology/domains/<directory>/links <global_path>/domains/<directory>/
+cp -r .ontology/domains/<directory>/actions <global_path>/domains/<directory>/
+```
+
+Always overwrite `<global_path>/domains/_index.yaml`.
 
 If a read or write fails, add the filename to the warnings list and **continue with the next file**:
 

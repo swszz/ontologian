@@ -1,6 +1,6 @@
 ---
-name: add
-description: Use when the user runs /ontologian:add or wants to add a new Object Type, Link Type, or Action Type to an ontology domain.
+name: ontologian-add
+description: Use when the user runs /ontologian-add or wants to add a new Object Type, Link Type, or Action Type to an ontology domain.
 ---
 
 # Ontologian — Add Type
@@ -55,7 +55,7 @@ No domains registered. Enter a name for the new domain:
 
 Wait for user input.
 
-- **Number selection** (existing domain): Store that domain's `name` and `path`/`paths` fields in memory. Proceed to Step 4.
+- **Number selection** (existing domain): Store that domain's `name`, `path`/`paths`/`directory` fields in memory. If the entry has a `directory` field, store that value for use in Step 7. Proceed to Step 4.
 - **"N" or new domain text**: Prompt for a domain name (lowercase letters, hyphens, and underscores allowed), then ask the following questions **one at a time**:
 
   ```
@@ -449,16 +449,14 @@ Proceed with adding the above? (y / n / edit)
 
 #### 7-A: New domain
 
-**Create ontology.yaml**: Use the Write tool to create `.ontology/domains/<domain_name>/ontology.yaml`.
+Create the per-entity YAML files and the domain subdirectory structure. Do **not** create a flat `ontology.yaml` for new domains.
 
-```yaml
-domain: <domain_name>
-version: 1
-description: "<domain_description>"
-object_types: []
-link_types: []
-action_types: []
-```
+**Write the entity file**: Use the Write tool to create the appropriate file based on type:
+- Object Type → `.ontology/domains/<domain_name>/objects/<Name>.yaml`
+- Link Type → `.ontology/domains/<domain_name>/links/<name>.yaml`
+- Action Type → `.ontology/domains/<domain_name>/actions/<name>.yaml`
+
+Write the `new_entry` contents directly into that file (not wrapped in an array — a single YAML document).
 
 **Update _index.yaml**: Read the current `_index.yaml`, then use the Edit tool to append the new domain entry using the canonical format below. This is the only template — do not add a second version.
 
@@ -468,7 +466,7 @@ action_types: []
     domain_owner: "<domain_owner>"
     stability: <stability>
     semantic_version: "1.0.0"
-    path: <domain_name>/ontology.yaml
+    directory: <domain_name>
     last_modified: <today_date>   # YYYY-MM-DD
 ```
 
@@ -480,26 +478,13 @@ domains:
     domain_owner: "<domain_owner>"
     stability: <stability>
     semantic_version: "1.0.0"
-    path: <domain_name>/ontology.yaml
+    directory: <domain_name>
     last_modified: <today_date>
 ```
 
-Include `new_entry` immediately in the appropriate type array. For example, if adding an Object Type:
-
-```yaml
-domain: <domain_name>
-version: 1
-description: "<domain_description>"
-object_types:
-  - name: <name>
-    ...
-link_types: []
-action_types: []
-```
-
-Use the canonical `_index.yaml` template defined above in the "Update _index.yaml" section — do not duplicate the template here.
-
 #### 7-B: Existing domain — pre-migration (`path` field present)
+
+> **Note:** This domain uses the legacy single-file format. User must run `/ontologian-migrate` to upgrade to the new per-entity format.
 
 Target file: `.ontology/domains/<path>` (e.g. `.ontology/domains/ecommerce/ontology.yaml`)
 
@@ -525,6 +510,8 @@ Update the domain's `last_modified` in `_index.yaml` to today's date (Edit tool)
 
 #### 7-C: Existing domain — post-migration (`paths` field present)
 
+> **Note:** This domain uses the per-type file format. User must run `/ontologian-migrate` to upgrade to the new per-entity format.
+
 Determine the target file by type:
 
 | Type | Field | Example path |
@@ -538,6 +525,62 @@ Resolve the actual path as `.ontology/domains/<paths.<type>_types>`.
 Read the file and append `new_entry` to the array (Edit tool). Apply the same empty-array / existing-items logic as 7-B.
 
 Update the domain's `last_modified` in `_index.yaml` (Edit tool).
+
+#### 7-D: Existing domain — new format (`directory` field present)
+
+Target directories:
+- Object Type: `.ontology/domains/<directory>/objects/`
+- Link Type: `.ontology/domains/<directory>/links/`
+- Action Type: `.ontology/domains/<directory>/actions/`
+
+**Object Type:**
+Check that `.ontology/domains/<directory>/objects/<Name>.yaml` does not already exist.
+If it exists, warn:
+```
+⚠️ Object Type "<Name>" already exists at <path>. Overwrite? (y/n)
+```
+If n → cancel. If y or file doesn't exist → Use the Write tool to create the file:
+```yaml
+name: <Name>
+description: "<description>"  # only if provided
+properties:
+  - name: <property_name>
+    type: <type>
+    ...
+```
+
+**Link Type:**
+Check that `.ontology/domains/<directory>/links/<name>.yaml` does not already exist.
+If it exists → warn and ask to overwrite (same as Object Type).
+Write:
+```yaml
+name: <name>
+from: <ObjectType>
+to: <ObjectType>
+cardinality: <cardinality>
+description: "<description>"  # only if provided
+```
+
+**Action Type:**
+Check that `.ontology/domains/<directory>/actions/<name>.yaml` does not already exist.
+If it exists → warn and ask to overwrite.
+Write:
+```yaml
+name: <name>
+description: "<description>"  # only if provided
+target: <ObjectType>
+trigger: <trigger>
+trigger_condition:  # only when object_updated and field provided
+  field: <field>
+  from: <value>  # only if provided
+  to: <value>    # only if provided
+parameters:       # only when at least one parameter
+  - name: <param>
+    type: <type>
+    required: false  # only when false; omit when true
+```
+
+Update `last_modified` in `_index.yaml` to today's date after writing.
 
 ---
 
@@ -557,16 +600,20 @@ Update the domain's `last_modified` in `_index.yaml` (Edit tool).
 ### Step 9: Completion message
 
 ```
-✓ [<domain_name>] Added <entry_name> (<type_label>) → .ontology/domains/<domain_name>/ontology.yaml
-[i] Tip: Run /ontologian:validate to check for schema issues, or /ontologian:visualize to see your domain's relationships.
+✓ [<domain_name>/<entry_name>](<file_path>) added (<type_label>)
+[i] Tip: Run /ontologian-validate to check for schema issues, or /ontologian-visualize to see your domain's relationships.
 ```
+
+Where `<file_path>` is the actual path of the file created:
+- Object Type: `.ontology/domains/<directory>/objects/<Name>.yaml`
+- Link Type: `.ontology/domains/<directory>/links/<name>.yaml`
+- Action Type: `.ontology/domains/<directory>/actions/<name>.yaml`
+- Pre-migration domains (path/paths): use the existing path format as before
 
 `<type_label>` mapping:
 - Object Type → `Object Type`
 - Link Type → `Link Type`
 - Action Type → `Action Type`
-
-Output the path of the file that was actually modified (for post-migration domains, use the specific type file path).
 
 ---
 
@@ -577,3 +624,5 @@ Output the path of the file that was actually modified (for post-migration domai
 - **Forgetting to update `last_modified` in `_index.yaml`** → Always update it after modifying any YAML file.
 - **Wrong path format for new domains** → The `path` value in `_index.yaml` must be `<domain_name>/ontology.yaml` (no leading `domains/`).
 - **Skipping name format validation** → Object Type=PascalCase, Action Type=snake_case, Link Type=lowercase+underscores. Re-prompt until a valid value is entered.
+- **Using `path:` in `_index.yaml` for new domains** → New domains always use `directory:` field.
+- **Writing to a flat `ontology.yaml` for new domains** → Always write to `objects/`, `links/`, `actions/` subdirectories.

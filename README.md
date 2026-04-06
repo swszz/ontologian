@@ -26,7 +26,7 @@ Run inside Claude Code:
 /plugin install ontologian@ontologian
 ```
 
-Installs 9 slash commands (`/ontologian`, `/ontologian:add`, `/ontologian:analyze`, ...) and the `ontology-consultant` proactive agent.
+Installs 9 slash commands (`/ontologian`, `/ontologian-add`, `/ontologian-analyze`, ...) and the `ontology-consultant` proactive agent.
 
 ### Update
 
@@ -42,22 +42,22 @@ No need to re-run `setup.sh` — this updates commands and agent only.
 
 | Command | Description |
 |---|---|
-| `/ontologian:consult` | **Start a Palantir-grade ontology consulting session** — guided discovery, design, construction, and governance documentation |
+| `/ontologian-consult` | **Start a Palantir-grade ontology consulting session** — guided discovery, design, construction, and governance documentation |
 | `/ontologian` | Show domain list and status summary |
-| `/ontologian:add` | Interactively add a new type to a domain |
-| `/ontologian:analyze` | Derive ontology structure from free-form requirements |
-| `/ontologian:search <keyword>` | Search across all domains (use `--type object\|link\|action` and `--domain <name>` to filter) |
-| `/ontologian:validate` | Check YAML schema and referential integrity |
-| `/ontologian:sync` | Sync local `.ontology/` to the global store |
-| `/ontologian:migrate` | Split a domain's single file into per-type files |
-| `/ontologian:visualize` | Render an ASCII relationship diagram |
+| `/ontologian-add` | Interactively add a new type to a domain |
+| `/ontologian-analyze` | Derive ontology structure from free-form requirements |
+| `/ontologian-search <keyword>` | Search across all domains (use `--type object\|link\|action` and `--domain <name>` to filter) |
+| `/ontologian-validate` | Check YAML schema and referential integrity |
+| `/ontologian-sync` | Sync local `.ontology/` to the global store |
+| `/ontologian-migrate` | Migrate domain from single-file or per-type format to per-entity format (one file per type) |
+| `/ontologian-visualize` | Render an ASCII relationship diagram |
 
 ### Consulting Agent
 
 The plugin includes an `ontology-consultant` agent that activates in two ways:
 
 - **Proactively** — when you describe business requirements, system design, or domain entities, the agent automatically offers to model them as an ontology
-- **Explicitly** — run `/ontologian:consult` to start a full consulting session immediately
+- **Explicitly** — run `/ontologian-consult` to start a full consulting session immediately
 
 The consulting session covers 6 phases:
 
@@ -65,7 +65,7 @@ The consulting session covers 6 phases:
 |---|---|
 | **Phase 0 — Scope** | Confirm the domain scope and whether to start from existing requirements or a blank slate |
 | **Discovery** | 5-axis structured interview: entities, relationships, processes, boundaries, governance |
-| **Modeling** | Autonomous candidate derivation using the same rules as `/ontologian:analyze` |
+| **Modeling** | Autonomous candidate derivation using the same rules as `/ontologian-analyze` |
 | **Design** | Palantir enrichment patterns: object enrichment, state machine audit, semantic naming review, governance metadata |
 | **Construction** | Writes all domain files in dependency order, runs automatic validation |
 | **Delivery** | Renders ASCII diagrams for all domains, generates `.ontology/CONSULT_REPORT.md` |
@@ -75,19 +75,19 @@ The consulting session covers 6 phases:
 ## Examples
 
 ```
-/ontologian:consult
+/ontologian-consult
 "We run a logistics platform. Shipments are assigned to Drivers, pass through Hubs, and each leg is tracked as a RouteSegment."
 
-/ontologian:analyze
+/ontologian-analyze
 "Users sign up and place Orders. Each Order has multiple OrderItems linked to a Product. When an Order is confirmed, we send a confirmation email."
 
-/ontologian:add
+/ontologian-add
 "Add a new Object Type called Invoice to the billing domain — has invoice_id, issued_at, total_amount, and status (draft, sent, paid, overdue)."
 
-/ontologian:search order --type action
-/ontologian:validate
-/ontologian:visualize
-/ontologian:sync
+/ontologian-search order --type action
+/ontologian-validate
+/ontologian-visualize
+/ontologian-sync
 ```
 
 ---
@@ -101,84 +101,100 @@ ontologian/
 ├── plugin/                      # Plugin content (installed via git-subdir)
 │   ├── .claude-plugin/
 │   │   └── plugin.json
-│   ├── skills/                  # Operation logic — single source of truth
-│   │   ├── status.md
-│   │   ├── add.md
-│   │   ├── analyze.md
-│   │   ├── validate.md
-│   │   ├── search.md
-│   │   ├── sync.md
-│   │   ├── migrate.md
-│   │   └── visualize.md
-│   ├── commands/                # Thin entry points — delegate to skills
-│   │   ├── ontologian.md        # /ontologian
-│   │   └── ontologian/          # /ontologian:<name>
-│   │       └── *.md
+│   ├── skills/                  # One directory per skill
+│   │   ├── add/SKILL.md
+│   │   ├── analyze/SKILL.md
+│   │   ├── consult/SKILL.md
+│   │   ├── migrate/SKILL.md
+│   │   ├── search/SKILL.md
+│   │   ├── status/SKILL.md
+│   │   ├── sync/SKILL.md
+│   │   ├── validate/SKILL.md
+│   │   └── visualize/SKILL.md
 │   ├── agents/
 │   │   └── ontology-consultant.md
 │   └── hooks/
-│       └── hooks.json
+│       ├── hooks.json
+│       └── session-start
 ├── setup.sh                     # Marketplace registration script
 └── README.md
 ```
 
-**Architecture:** `marketplace.json` lives at the repo root. The plugin is installed from `plugin/` subdirectory — this prevents recursive cloning. To modify behavior, edit `plugin/skills/` only.
+**Architecture:** `marketplace.json` lives at the repo root. The plugin is installed from the `plugin/` subdirectory. Each skill is self-contained in its own `skills/<name>/SKILL.md` directory.
 
 ---
 
 ## How It Works
 
-The `.ontology/` directory is created **lazily** — it does not exist until you run your first write command (`/ontologian:add` or `/ontologian:analyze`). Read-only commands (`/ontologian`, `/ontologian:validate`, `/ontologian:search`) require the directory to already exist.
+The `.ontology/` directory is created **lazily** — it does not exist until you run your first write command (`/ontologian-add` or `/ontologian-analyze`). Read-only commands (`/ontologian`, `/ontologian-validate`, `/ontologian-search`) require the directory to already exist.
 
 When first created, the directory structure looks like this:
 
 ```
 <project-root>/
 └── .ontology/
-    ├── config.yaml          # Plugin config (sync mode, global path)
-    ├── domains/
-    │   ├── _index.yaml      # Domain registry
-    │   └── <domain-name>/
-    │       └── ontology.yaml
-    └── migrations/
+    ├── config.yaml              # Plugin config (sync mode, global path)
+    └── domains/
+        ├── _index.yaml          # Domain registry
+        └── <domain-name>/
+            ├── objects/
+            │   └── <ObjectTypeName>.yaml
+            ├── links/
+            │   └── <link_name>.yaml
+            └── actions/
+                └── <action_name>.yaml
 ```
 
 ### Domain file structure
 
+Each entity type lives in its own file. No wrapper keys — the file content IS the entity definition.
+
+**`objects/Product.yaml`**
 ```yaml
-domain: ecommerce
-version: 1
-description: "E-commerce domain"
+name: Product
+description: "A sellable item"
+properties:
+  - name: product_id
+    type: string
+    primary: true
+  - name: price
+    type: float
+    description: "Sale price in KRW"
+  - name: status
+    type: string
+    description: "Allowed values: active, inactive, discontinued"
+```
 
-object_types:
-  - name: Product
-    description: "A sellable item"
-    properties:
-      - name: product_id
-        type: string
-        primary: true
-      - name: price
-        type: float
-        description: "Sale price in KRW"
-      - name: status
-        type: string
-        description: "Allowed values: active, inactive, discontinued"
+**`links/places.yaml`**
+```yaml
+name: places
+from: User
+to: Order
+cardinality: one_to_many
+description: "User places an order"
+```
 
-link_types:
-  - name: places
-    from: User
-    to: Order
-    cardinality: one_to_many
-    description: "User places an order"
+**`actions/send_welcome_email.yaml`**
+```yaml
+name: send_welcome_email
+description: "Send welcome email to newly registered users"
+target: User
+trigger: object_created
+parameters:
+  - name: email_template
+    type: string
+```
 
-action_types:
-  - name: send_welcome_email
-    description: "Send welcome email to newly registered users"
-    target: User
-    trigger: object_created
-    parameters:
-      - name: email_template
-        type: string
+**`_index.yaml`** (domain registry)
+```yaml
+domains:
+  - name: ecommerce
+    description: "E-commerce domain"
+    domain_owner: "platform-team"
+    stability: stable
+    semantic_version: "1.0.0"
+    directory: ecommerce
+    last_modified: 2026-04-06
 ```
 
 ### `config.yaml` options

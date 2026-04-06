@@ -1,6 +1,6 @@
 ---
-name: validate
-description: Use when the user runs /ontologian:validate or wants to check ontology YAML schema correctness and referential integrity across all domains.
+name: ontologian-validate
+description: Use when the user runs /ontologian-validate or wants to check ontology YAML schema correctness and referential integrity across all domains.
 ---
 
 # Ontologian — Validate
@@ -38,12 +38,19 @@ Iterate over the `domains` array in `_index.yaml` and read each domain's type da
 
 - If `path` is present → Read the single file at `.ontology/domains/<path>`. Extract `object_types`, `link_types`, `action_types` arrays.
 - If `paths` is present → Compose paths as `.ontology/domains/<paths.X>` for each of `paths.object_types`, `paths.link_types`, and `paths.action_types`. Read each file separately and extract the corresponding array.
+- If the `directory` field is present → new per-entity format:
+  - Glob `.ontology/domains/<directory>/objects/*.yaml` → Read each file → collect into `object_types[]`
+  - Glob `.ontology/domains/<directory>/links/*.yaml` → Read each file → collect into `link_types[]`
+  - Glob `.ontology/domains/<directory>/actions/*.yaml` → Read each file → collect into `action_types[]`
+  - Each file contains the entity definition directly (no wrapper key). A `objects/User.yaml` file is read as a single object type entry.
 
 If a domain file cannot be read, add the following to the error list and skip validation for that domain:
 
 ```
 [<domain_name>] Cannot read file: <file_path>
 ```
+
+For `directory`-format domains: if a subdirectory is missing or empty, treat the corresponding array as `[]`.
 
 For each domain, store in memory:
 
@@ -215,6 +222,19 @@ If a `parameters` array exists, validate each parameter:
 [<domain_name>] <Type Kind> '<name>'
   → <field>: <error description>
 ```
+
+**For `directory`-format domains, render entity names as file links in error messages:**
+
+```
+[<domain_name>] [<TypeName>](.ontology/domains/<directory>/<subdir>/<filename>.yaml): <error_message>
+```
+
+Where:
+- Object Types → `objects/<Name>.yaml`
+- Link Types → `links/<name>.yaml`
+- Action Types → `actions/<name>.yaml`
+
+For `path`/`paths` domains, keep the existing plain text format.
 
 Examples:
 

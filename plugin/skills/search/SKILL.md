@@ -1,6 +1,6 @@
 ---
-name: search
-description: Use when the user runs /ontologian:search or wants to search for a keyword across all ontology domains (object types, link types, action types).
+name: ontologian-search
+description: Use when the user runs /ontologian-search or wants to search for a keyword across all ontology domains (object types, link types, action types).
 ---
 
 # Ontologian — Search
@@ -47,6 +47,10 @@ If a `--domain` filter is set, process only that domain. Iterate over the `domai
 **Branch on path/paths:**
 - If `path` is present → Read `.ontology/domains/<path>` (contains all three type arrays)
 - If `paths` is present → Read `.ontology/domains/<paths.object_types>`, `<paths.link_types>`, and `<paths.action_types>` separately
+- If `directory` is present → new per-entity format:
+  - Glob and read `.ontology/domains/<directory>/objects/*.yaml` for object type matches
+  - Glob and read `.ontology/domains/<directory>/links/*.yaml` for link type matches
+  - Glob and read `.ontology/domains/<directory>/actions/*.yaml` for action type matches
 
 Store type data in memory per domain. On read failure, log the error for that domain and continue.
 
@@ -106,6 +110,12 @@ Total: <N> result(s) (Object: <N>, Link: <N>, Action: <N>)
 
 (Some domains failed to load: <name1>, <name2>)  ← only shown if any domain failed
 ```
+
+**Result rendering (directory-format domains):**
+Each matched result is rendered as:
+[<domain>/<name>](.ontology/domains/<directory>/<subdir>/<filename>.yaml) — <match_context>
+
+Where `<subdir>` is `objects`, `links`, or `actions` based on the type.
 
 **Field output rules:**
 - Omit the Description line if the item has no `description`.

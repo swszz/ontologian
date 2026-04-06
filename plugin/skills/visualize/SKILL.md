@@ -1,6 +1,6 @@
 ---
-name: visualize
-description: Use when the user runs /ontologian:visualize or wants to see a visual ASCII diagram of an ontology domain's Object Types, relationships, and actions.
+name: ontologian-visualize
+description: Use when the user runs /ontologian-visualize or wants to see a visual ASCII diagram of an ontology domain's Object Types, relationships, and actions.
 ---
 
 # Ontologian — Visualize
@@ -69,6 +69,12 @@ Use the Read tool to read `.ontology/domains/<path>`. Extract `object_types`, `l
 
 Compose each path as `.ontology/domains/<paths.X>` for `paths.object_types`, `paths.link_types`, and `paths.action_types`. Read each file and extract the corresponding array.
 
+**If `directory` is present (new per-entity format):**
+
+- Glob `.ontology/domains/<directory>/objects/*.yaml` → Read each → collect object names and properties
+- Glob `.ontology/domains/<directory>/links/*.yaml` → Read each → collect link definitions (name, from, to, cardinality)
+- Glob `.ontology/domains/<directory>/actions/*.yaml` → Read each → collect action definitions
+
 If a file cannot be read, output the following and skip that domain:
 
 ```
@@ -86,6 +92,10 @@ action_types: [...]    # empty array if absent
 ### Step 5: Render
 
 Output in the following format. Always output every section even if it has no data.
+
+**File link rendering (directory-format domains):**
+Object Type labels in the diagram use file link format:
+[<ObjectType>](.ontology/domains/<directory>/objects/<ObjectType>.yaml)
 
 #### 5-A: Object Types box
 

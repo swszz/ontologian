@@ -1,5 +1,5 @@
 ---
-name: status
+name: ontologian-status
 description: Use when the user runs /ontologian or wants to see the overall status of the ontology repository — domain list, type counts, last modified dates, and available commands.
 ---
 
@@ -59,6 +59,11 @@ Iterate over the `domains` array in `_index.yaml` and aggregate type counts per 
 
 - If the `path` field is present → pre-migration: Read the single file at `.ontology/domains/<path>`.
 - If the `paths` field is present → post-migration: Read `paths.object_types`, `paths.link_types`, and `paths.action_types` separately. Resolve each to `.ontology/domains/<paths.X>` (e.g. if `paths.object_types` is `user/object_types.yaml`, read `.ontology/domains/user/object_types.yaml`).
+- If the `directory` field is present → new per-entity format: Glob all `.yaml` files in `.ontology/domains/<directory>/objects/`, `.ontology/domains/<directory>/links/`, and `.ontology/domains/<directory>/actions/`.
+  - `object_count` = number of `.yaml` files found in `objects/`
+  - `link_count` = number of `.yaml` files found in `links/`
+  - `action_count` = number of `.yaml` files found in `actions/`
+  - `last_modified` = value from `_index.yaml` for that domain
 
 **Aggregate per domain:**
 
@@ -70,6 +75,8 @@ Iterate over the `domains` array in `_index.yaml` and aggregate type counts per 
 | `last_modified` | Value from `_index.yaml` for that domain |
 
 If a domain file cannot be read, show `(read error)` in that row and skip it.
+
+For `directory`-format domains: if the `objects/`, `links/`, or `actions/` subdirectory is missing, treat that count as 0.
 
 ### Step 5: Output results
 
@@ -103,12 +110,23 @@ Available commands:
   /ontologian:review    — Run 3-round Engineering Head Council review
 ```
 
+**File link rendering (directory-format domains only):**
+For domains using the `directory` format, render the domain name in the table as a markdown link:
+`[<name>](.ontology/domains/<directory>/)`
+
 After the domains table and totals line, scan all properties across all domains:
 
 For each property where the name matches `.*_id$` or `.*_ref$` (case-insensitive), output one line per match:
 ```
 Possible cross-domain reference: <domain>.<ObjectType>.<property_name>
 ```
+
+For `directory`-format domains, render the ObjectType as a file link:
+```
+Possible cross-domain reference: <domain>.[<ObjectType>](.ontology/domains/<directory>/objects/<ObjectType>.yaml).<property_name>
+```
+
+For `path`/`paths` format domains, output the plain text format as before.
 
 If any such properties are found, precede the list with:
 ```

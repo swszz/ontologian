@@ -17,17 +17,16 @@ Glob `.ontology/config.yaml` → if missing, output the following and **exit imm
 
 ```
 The ontology repository is not initialized.
-To get started, run `/ontologian:add` or `/ontologian:analyze` (includes auto-initialization).
+To get started, run `/ontologian-add` or `/ontologian-analyze` (includes auto-initialization).
 
 Available commands:
-  /ontologian:add       — Add a new type
-  /ontologian:analyze   — Derive ontology from business requirements
-  /ontologian:search    — Search by keyword
-  /ontologian:validate  — Validate integrity
-  /ontologian:sync      — Sync to global store
-  /ontologian:migrate   — Split domain file into per-type files
-  /ontologian:visualize — Render relationship diagram
-  /ontologian:review    — Run 3-round Engineering Head Council review
+  /ontologian-add       — Add a new type
+  /ontologian-analyze   — Derive ontology from business requirements
+  /ontologian-consult   — Start a guided ontology consulting session
+  /ontologian-search    — Search by keyword
+  /ontologian-validate  — Validate integrity
+  /ontologian-sync      — Sync to global store
+  /ontologian-visualize — Render relationship diagram
 ```
 
 ### Step 2: Read config.yaml
@@ -46,7 +45,7 @@ If the file is missing or the `domains` list is empty, output:
 
 ```
 No domains registered.
-Run `/ontologian:add` to add a domain.
+Run `/ontologian-add` to add a domain.
 ```
 
 Then skip to Step 5 (command list).
@@ -55,23 +54,15 @@ Then skip to Step 5 (command list).
 
 Iterate over the `domains` array in `_index.yaml` and aggregate type counts per domain.
 
-**Determining migration status:**
-
-- If the `path` field is present → pre-migration: Read the single file at `.ontology/domains/<path>`.
-- If the `paths` field is present → post-migration: Read `paths.object_types`, `paths.link_types`, and `paths.action_types` separately. Resolve each to `.ontology/domains/<paths.X>` (e.g. if `paths.object_types` is `user/object_types.yaml`, read `.ontology/domains/user/object_types.yaml`).
-- If the `directory` field is present → new per-entity format: Glob all `.yaml` files in `.ontology/domains/<directory>/objects/`, `.ontology/domains/<directory>/links/`, and `.ontology/domains/<directory>/actions/`.
-  - `object_count` = number of `.yaml` files found in `objects/`
-  - `link_count` = number of `.yaml` files found in `links/`
-  - `action_count` = number of `.yaml` files found in `actions/`
-  - `last_modified` = value from `_index.yaml` for that domain
+All domains use the `directory` format. Glob `.yaml` files in `.ontology/domains/<directory>/objects/`, `.ontology/domains/<directory>/links/`, and `.ontology/domains/<directory>/actions/` to get counts.
 
 **Aggregate per domain:**
 
 | Field | How to count |
 |-------|-------------|
-| `object_count` | Number of items in `object_types` array |
-| `link_count` | Number of items in `link_types` array |
-| `action_count` | Number of items in `action_types` array |
+| `object_count` | Number of `.yaml` files returned by glob in `.ontology/domains/<directory>/objects/` |
+| `link_count` | Number of `.yaml` files returned by glob in `.ontology/domains/<directory>/links/` |
+| `action_count` | Number of `.yaml` files returned by glob in `.ontology/domains/<directory>/actions/` |
 | `last_modified` | Value from `_index.yaml` for that domain |
 
 If a domain file cannot be read, show `(read error)` in that row and skip it.
@@ -97,17 +88,16 @@ Domains:
 └────────────────┴──────────┴──────────┴──────────┴──────────────────┘
 
 Total domains: <N> | Object Types: <N> | Link Types: <N> | Action Types: <N>
-Details: /ontologian:visualize | Validate all: /ontologian:validate
+Details: /ontologian-visualize | Validate all: /ontologian-validate
 
 Available commands:
-  /ontologian:add       — Add a new type
-  /ontologian:analyze   — Derive ontology from business requirements
-  /ontologian:search    — Search by keyword
-  /ontologian:validate  — Validate integrity
-  /ontologian:sync      — Sync to global store
-  /ontologian:migrate   — Split domain file into per-type files
-  /ontologian:visualize — Render relationship diagram
-  /ontologian:review    — Run 3-round Engineering Head Council review
+  /ontologian-add       — Add a new type
+  /ontologian-analyze   — Derive ontology from business requirements
+  /ontologian-consult   — Start a guided ontology consulting session
+  /ontologian-search    — Search by keyword
+  /ontologian-validate  — Validate integrity
+  /ontologian-sync      — Sync to global store
+  /ontologian-visualize — Render relationship diagram
 ```
 
 **File link rendering (directory-format domains only):**
@@ -126,7 +116,6 @@ For `directory`-format domains, render the ObjectType as a file link:
 Possible cross-domain reference: <domain>.[<ObjectType>](.ontology/domains/<directory>/objects/<ObjectType>.yaml).<property_name>
 ```
 
-For `path`/`paths` format domains, output the plain text format as before.
 
 If any such properties are found, precede the list with:
 ```
@@ -143,6 +132,6 @@ If none are found, omit this section entirely.
 
 ## Common Mistakes
 
-- **Domain file read error** → Double-check the path/paths branching logic in Step 4. Post-migration domains require reading three separate files.
-- **Missing array key** → If `object_types` is absent, treat the count as 0.
+- **Domain file read error** → Double-check the directory glob paths in Step 4. Each subdirectory (`objects/`, `links/`, `actions/`) is read separately.
+- **Missing subdirectory** → If `objects/`, `links/`, or `actions/` is absent, treat that count as 0.
 - **Totals inside the table** → Totals must be output **outside** the table as a separate line.

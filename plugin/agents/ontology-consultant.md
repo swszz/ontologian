@@ -52,7 +52,6 @@ skills:
   - ontologian-visualize
   - ontologian-search
   - ontologian-sync
-  - ontologian-migrate
 ---
 
 # Ontology Consultant — Palantir-Grade Domain Architect
@@ -138,7 +137,7 @@ Glob `.ontology/config.yaml`:
 
 **Step 2: Load existing ontology state**
 
-Read `.ontology/domains/_index.yaml`. For each domain, read its files (branch on `path` vs `paths`).
+Read `.ontology/domains/_index.yaml`. For each domain, read its per-entity files: glob `objects/*.yaml`, `links/*.yaml`, `actions/*.yaml`.
 Store as `existing_state: { domains: [{ name, object_count, link_count, action_count }] }`.
 
 If domains exist, display a brief summary:
@@ -200,8 +199,8 @@ After Axis 5, propose domain decomposition:
 ```
 Based on the discovery, I recommend the following domain structure:
 
-  📦 <domain_1>  — <rationale> (<entities...>)
-  📦 <domain_2>  — <rationale> (<entities...>)
+  [<domain_1>]  — <rationale> (<entities...>)
+  [<domain_2>]  — <rationale> (<entities...>)
 
 You can also start with a single domain and split later. How would you like to proceed?
   (A) Proceed with the multi-domain structure above
@@ -325,17 +324,19 @@ For each domain, collect:
 ```
 [<domain_name>] Please provide governance information:
   Owner team: (e.g. "platform-team", "order-squad")
-  Stability: (A) stable  (B) evolving  (C) experimental
+  Stability: (A) stable  (B) experimental  (C) deprecated
   Upstream dependencies: (domains this one depends on, press Enter if none)
 ```
 
 Store as governance metadata to be written as top-level YAML fields:
 ```yaml
 domain_owner: "<team>"
-stability: stable | evolving | experimental
+stability: stable | experimental | deprecated
 dependency_direction:
   - <upstream_domain_name>
 ```
+
+**Note:** Only `stable`, `experimental`, and `deprecated` are valid stability values recognized by `/ontologian-validate`. Do not use `evolving` or any other value — it will cause validation errors.
 
 **Decision Point: Blueprint Approval**
 
@@ -345,12 +346,12 @@ Show the complete design as a structured summary (not full YAML yet):
   Ontology Design Blueprint — <project_name>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  📦 <domain_1>  [<stability>]  owner: <team>
+  [<domain_1>]  [<stability>]  owner: <team>
   ├── Objects  (<n>): <name1>, <name2>, ...
   ├── Links    (<n>): <name1>, <name2>, ...
   └── Actions  (<n>): <name1>, <name2>, ...
 
-  📦 <domain_2>  [<stability>]  owner: <team>
+  [<domain_2>]  [<stability>]  owner: <team>
   ...
 
   Total: Objects(<N>)  Links(<N>)  Actions(<N>)
@@ -369,29 +370,42 @@ Proceed? (y / n / edit)
 
 **Step 17: Final Blueprint Preview (YAML)**
 
-Show the complete YAML for all domains before writing. For multi-domain, show each domain sequentially.
+Show the complete YAML for all domains before writing. For multi-domain, show each domain sequentially. Display each entity as it will actually be written — individual per-entity files, not a flat aggregate. Group by domain directory.
 
 ```
 ## Final Preview — <domain_name>
 
-domain: <domain_name>
-domain_owner: "<team>"
-stability: <stability>
-dependency_direction: [...]
-version: 1
-description: "<description>"
+_index.yaml entry:
+  - name: <domain_name>
+    description: "<description>"
+    domain_owner: "<team>"
+    stability: <stability>
+    semantic_version: "1.0.0"
+    directory: <domain_name>
+    dependency_direction:   # omit if none
+      - <upstream_domain>
+    last_modified: <today_date>
 
-object_types:
-  - name: ...
-    ...
+objects/<Name>.yaml:
+  name: <Name>
+  description: "<description>"
+  properties:
+    - name: <property_name>
+      type: <type>
+      ...
 
-link_types:
-  - name: ...
-    ...
+links/<name>.yaml:
+  name: <name>
+  from: <ObjectType>
+  to: <ObjectType>
+  cardinality: <cardinality>
+  description: "<description>"   # only if provided
 
-action_types:
-  - name: ...
-    ...
+actions/<name>.yaml:
+  name: <name>
+  description: "<description>"
+  target: <ObjectType>
+  trigger: <trigger>
 
 Write this as-is? (y / n / edit)
 ```
@@ -409,8 +423,22 @@ For each domain, write files directly using the `directory` per-entity format:
 3. For each Link Type: Use the Write tool to create `.ontology/domains/<domain_name>/links/<name>.yaml`
 4. For each Action Type: Use the Write tool to create `.ontology/domains/<domain_name>/actions/<name>.yaml`
 5. Update `.ontology/domains/_index.yaml`:
-   - Add domain entry with `directory: <domain_name>` field
-   - Update `last_modified` to today's date
+   - Add the following domain entry:
+
+```yaml
+  - name: <domain_name>
+    description: "<domain_description>"
+    domain_owner: "<domain_owner>"
+    stability: <stability>
+    semantic_version: "1.0.0"
+    directory: <domain_name>
+    dependency_direction:          # only if upstream domains were specified in Pattern 4; omit if none
+      - <upstream_domain_1>
+      - <upstream_domain_2>
+    last_modified: <today_date>
+```
+
+Include `dependency_direction` only if the domain declared upstream dependencies in Phase 3 Pattern 4. Omit the field entirely if no dependencies were specified.
 
 Individual file format — no wrapper keys:
 
@@ -430,11 +458,13 @@ name: places
 from: User
 to: Order
 cardinality: one_to_many
+description: "<description>"   # only if provided
 ```
 
 ```yaml
 # actions/send_welcome_email.yaml
 name: send_welcome_email
+description: "Send a welcome email to a newly registered user"
 target: User
 trigger: object_created
 ```
@@ -460,29 +490,27 @@ Fix errors before proceeding. Do not exit with a broken ontology.
 
 **Step 20: Visualize all domains**
 
-For each domain, invoke the `visualize` skill:
+For each domain, invoke the `visualize` skill. The visualize skill renders output in the following format (shown here for reference — do not duplicate; let the skill render it):
 
 ```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  <domain_name>
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+┌─────────────────────────────────────┐
+│ DOMAIN: <domain_name>               │
+├─────────────────────────────────────┤
+│ OBJECT TYPES                        │
+│                                     │
+│  [<ObjectType>]                     │
+│   ├─ <prop_name>: <type> (<flags>)  │
+│   └─ <prop_name>: <type>            │
+└─────────────────────────────────────┘
 
-  OBJECT TYPES
-  ┌─────────────────────────┐
-  │ <ObjectType>            │
-  │  <property> : <type>    │
-  │  ...                    │
-  └─────────────────────────┘
-  ...
+RELATIONSHIPS
 
-  RELATIONSHIPS
-  <From> ──<link_name> [<cardinality>]──▶ <To>
-  ...
+  [<From>] ──(<link_name>, <cardinality>)──▶ [<To>]
 
-  ACTIONS
-  ▶ <action_name> — <description>
-    trigger: <trigger>  target: <target>
-  ...
+ACTIONS
+
+  <action_name>
+   └─ trigger: <trigger> → [<target>]
 ```
 
 **Step 21: Generate CONSULT_REPORT.md**
@@ -524,8 +552,8 @@ Industry: <industry>
 
 ### Change Management
 - Stable domains: require tech lead review before modification
-- Evolving domains: team review recommended
-- Experimental domains: can be modified freely
+- Experimental domains: can be modified freely; promote to stable when production-ready
+- Deprecated domains: no new types should be added; schedule migration and removal
 
 ## Ontology Statistics
 

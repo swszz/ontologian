@@ -59,17 +59,7 @@ Enter a number or 'all':
 
 ### Step 4: Read domain file
 
-Check the selected domain's `path` or `paths` field.
-
-**If `path` is present (pre-migration):**
-
-Use the Read tool to read `.ontology/domains/<path>`. Extract `object_types`, `link_types`, and `action_types` arrays.
-
-**If `paths` is present (post-migration):**
-
-Compose each path as `.ontology/domains/<paths.X>` for `paths.object_types`, `paths.link_types`, and `paths.action_types`. Read each file and extract the corresponding array.
-
-**If `directory` is present (new per-entity format):**
+All domains use the `directory` format:
 
 - Glob `.ontology/domains/<directory>/objects/*.yaml` → Read each → collect object names and properties
 - Glob `.ontology/domains/<directory>/links/*.yaml` → Read each → collect link definitions (name, from, to, cardinality)
@@ -174,12 +164,28 @@ ACTIONS
    └─ trigger: <trigger> → [<target>]
 ```
 
-If `trigger_condition` is present, show the condition inline:
+If `trigger_condition` is present, render based on which sub-fields are set:
 
-```
-  <action_name>
-   └─ trigger: object_updated (<field>: <from>→<to>) → [<target>]
-```
+- If both `from` and `to` are present:
+  ```
+    <action_name>
+     └─ trigger: object_updated (<field>: <from>→<to>) → [<target>]
+  ```
+- If only `from` is present (no `to`):
+  ```
+    <action_name>
+     └─ trigger: object_updated (<field>: <from>→any) → [<target>]
+  ```
+- If only `to` is present (no `from`):
+  ```
+    <action_name>
+     └─ trigger: object_updated (<field>: any→<to>) → [<target>]
+  ```
+- If only `field` is present (no `from`, no `to`):
+  ```
+    <action_name>
+     └─ trigger: object_updated (<field>: any change) → [<target>]
+  ```
 
 Add a blank line between multiple Actions.
 

@@ -27,7 +27,7 @@ Parse the keyword and filter options from the arguments.
 - `--domain=<name>` → search only the specified domain
 - Remaining text → keyword
 
-Example: `/ontologian:search User --type=object --domain=ecommerce`
+Example: `/ontologian-search User --type=object --domain=ecommerce`
 
 If no arguments are given, prompt:
 ```
@@ -44,13 +44,10 @@ Read `.ontology/domains/_index.yaml`. If the `domains` array is empty, output `"
 
 If a `--domain` filter is set, process only that domain. Iterate over the `domains` array and Read each file.
 
-**Branch on path/paths:**
-- If `path` is present → Read `.ontology/domains/<path>` (contains all three type arrays)
-- If `paths` is present → Read `.ontology/domains/<paths.object_types>`, `<paths.link_types>`, and `<paths.action_types>` separately
-- If `directory` is present → new per-entity format:
-  - Glob and read `.ontology/domains/<directory>/objects/*.yaml` for object type matches
-  - Glob and read `.ontology/domains/<directory>/links/*.yaml` for link type matches
-  - Glob and read `.ontology/domains/<directory>/actions/*.yaml` for action type matches
+All domains use the `directory` format:
+- Glob and read `.ontology/domains/<directory>/objects/*.yaml` for object type matches
+- Glob and read `.ontology/domains/<directory>/links/*.yaml` for link type matches
+- Glob and read `.ontology/domains/<directory>/actions/*.yaml` for action type matches
 
 Store type data in memory per domain. On read failure, log the error for that domain and continue.
 
@@ -67,7 +64,7 @@ Search targets:
 |------|----------------|
 | Object Type | `name`, `description`, `properties[].name` |
 | Link Type | `name`, `description`, `from`, `to` |
-| Action Type | `name`, `description`, `target`, `parameters[].name` |
+| Action Type | `name`, `description`, `target`, `parameters[].name`, `trigger_condition.field`, `trigger_condition.from`, `trigger_condition.to` |
 
 Collect matching items grouped by domain.
 
@@ -112,10 +109,13 @@ Total: <N> result(s) (Object: <N>, Link: <N>, Action: <N>)
 ```
 
 **Result rendering (directory-format domains):**
-Each matched result is rendered as:
-[<domain>/<name>](.ontology/domains/<directory>/<subdir>/<filename>.yaml) — <match_context>
+Use the multi-line grouped format. For each matched result, render the entity name as a markdown file link within the type header line:
 
-Where `<subdir>` is `objects`, `links`, or `actions` based on the type.
+- Object Type: `[Object Type] [<name>](.ontology/domains/<directory>/objects/<name>.yaml)`
+- Link Type: `[Link Type] [<name>](.ontology/domains/<directory>/links/<name>.yaml)`
+- Action Type: `[Action Type] [<name>](.ontology/domains/<directory>/actions/<name>.yaml)`
+
+The description, properties, and other detail lines below the header remain as plain text. Apply this format only to directory-format domains.
 
 **Field output rules:**
 - Omit the Description line if the item has no `description`.

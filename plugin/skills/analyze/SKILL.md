@@ -45,17 +45,20 @@ Store the input as `requirements_text`.
 
 ### Step 3: Load existing ontology
 
-Read `.ontology/domains/_index.yaml`. Iterate over the `domains` array and Read each domain file.
+Read `.ontology/domains/_index.yaml`. Iterate over the `domains` array and read each domain's files.
 
-**Branch on path/paths:**
-- If `path` is present → Read `.ontology/domains/<path>`
-- If `paths` is present → Read `.ontology/domains/<paths.object_types>`, `<paths.link_types>`, `<paths.action_types>` separately
+All domains use the `directory` format:
+- Glob `.ontology/domains/<directory>/objects/*.yaml` → read each → collect Object Type names
+- Glob `.ontology/domains/<directory>/links/*.yaml` → read each → collect Link Type names
+- Glob `.ontology/domains/<directory>/actions/*.yaml` → read each → collect Action Type names
+
+If a directory or file cannot be read, skip that domain and continue.
 
 Store in `existing_ontology`:
 ```
 { domains: [{ name, object_types: [names], link_types: [names], action_types: [names] }] }
 ```
-If no domains or files are empty, use `{ domains: [] }` and continue.
+If no domains exist or all files are empty, use `{ domains: [] }` and continue.
 
 ---
 
@@ -343,9 +346,9 @@ Choose (A/B/C/S):
 ```
 [N/totalN] Confirm the cardinality for the <from>-<to> relationship (<link_name>).
 
-  (A) one_to_one   (B) one_to_many   (C) many_to_many   (S) Skip
+  (A) one_to_one   (B) one_to_many   (C) many_to_many   (D) many_to_one   (S) Skip
 
-Choose (A/B/C/S):
+Choose (A/B/C/D/S):
 ```
 Apply the selection to that Link Type's `cardinality`.
 
@@ -431,8 +434,9 @@ Choose (A/B):
 2. Description (optional, press Enter to skip)
 3. Team or owner responsible for this domain (required, e.g. platform-team) → stored as `domain_owner`
 4. Stability level: `1. experimental` / `2. stable` / `3. deprecated` (default: experimental) → stored as `stability`
+5. Does this domain depend on another domain? (press Enter to skip, or enter domain names separated by commas) → stored as `dependency_direction` (split by comma, trim whitespace, store as array). If empty, omit the field.
 
-Store governance fields (`domain_owner`, `stability`, `semantic_version: "1.0.0"`) and write them to both the domain YAML header and the `_index.yaml` entry in Step 9-A.
+Store governance fields (`domain_owner`, `stability`, `semantic_version: "1.0.0"`, `dependency_direction`) and write them to the `_index.yaml` entry in Step 9-A. Omit `dependency_direction` if not provided.
 
 **Option B — distribute**: Specify a domain for each Object Type:
 ```
@@ -440,7 +444,12 @@ Assign each type to a domain.
   User → (1) auth  (2) ecommerce  (N) New domain: __
   Order → ...
 ```
-Store the per-type domain assignments. In Step 9, process each domain separately.
+Store the per-type domain assignments. For each **new** domain created during distribution, collect the following governance fields **one at a time** before proceeding to Step 9:
+1. Team or owner responsible for this domain (required, e.g. platform-team) → stored as `domain_owner`
+2. Stability level: `1. experimental` / `2. stable` / `3. deprecated` (default: experimental) → stored as `stability`
+3. Does this domain depend on another domain? (press Enter to skip, or enter domain names separated by commas) → stored as `dependency_direction`. If empty, omit the field.
+
+Store governance fields (`domain_owner`, `stability`, `semantic_version: "1.0.0"`, `dependency_direction`) and write them to the `_index.yaml` entry in Step 9-A. In Step 9, process each domain separately.
 
 ---
 
@@ -496,39 +505,88 @@ If option B (distribute) was selected in Step 7, repeat the logic below for each
 
 #### 9-A: New domain
 
-Write `.ontology/domains/<domain_name>/ontology.yaml`:
+Write individual entity files using the per-entity directory format. Do **not** create a flat `ontology.yaml`.
+
+**Object Types:** For each confirmed Object Type, use the Write tool to create:
+`.ontology/domains/<domain_name>/objects/<Name>.yaml`
+
+File content (no wrapper keys):
 ```yaml
-domain: <domain_name>
-version: 1
-description: "<domain_description>"
-object_types:
-  # all confirmed Object Types ([] if none)
-link_types:
-  # confirmed Link Types ([] if none)
-action_types:
-  # confirmed Action Types ([] if none)
+name: <Name>
+description: "<description>"
+properties:
+  - name: <property_name>
+    type: <type>
+    description: "<description>"  # only if provided
+    primary: true                  # only when true
+    computed: true                 # only when true
+    expression: "<expr>"           # only when computed=true and expression provided
 ```
-Use Edit to add the new domain entry to `_index.yaml` with governance metadata and `last_modified: today`:
+
+**Link Types:** For each confirmed Link Type, use the Write tool to create:
+`.ontology/domains/<domain_name>/links/<name>.yaml`
+
+File content:
+```yaml
+name: <name>
+from: <ObjectType>
+to: <ObjectType>
+cardinality: <cardinality>
+description: "<description>"  # only if provided
+```
+
+**Action Types:** For each confirmed Action Type, use the Write tool to create:
+`.ontology/domains/<domain_name>/actions/<name>.yaml`
+
+File content:
+```yaml
+name: <name>
+description: "<description>"  # only if provided
+target: <ObjectType>
+trigger: <trigger>
+trigger_condition:             # only when trigger=object_updated and field provided
+  field: <field>
+  from: <value>                # only if provided
+  to: <value>                  # only if provided
+parameters:                    # only when at least one parameter
+  - name: <param>
+    type: <type>
+    required: false            # only when false; omit when true
+```
+
+**Update `_index.yaml`:** Use Edit to add the new domain entry with `directory:` field (not `path:`):
 ```yaml
   - name: <domain_name>
     description: "<domain_description>"
     domain_owner: "<domain_owner>"
     stability: <stability>
     semantic_version: "1.0.0"
-    path: <domain_name>/ontology.yaml
+    directory: <domain_name>
+    dependency_direction:          # only if declared; omit entirely if not provided
+      - <upstream_domain>
     last_modified: <today_date>   # YYYY-MM-DD
 ```
 
-#### 9-B: Existing domain — `path` field present (pre-migration)
+If `domains: []`, replace the empty array with a populated list before appending.
 
-Read `.ontology/domains/<path>` → loop through confirmed candidates and use Edit to append to each type array.
-If an array is `[]`, replace with proper array form before appending.
-After all appends (including edge case where no new YAML is written due to all merges), always update the domain's `last_modified` in `_index.yaml` to today's date (YYYY-MM-DD) using the Edit tool.
+#### 9-B: Existing domain — `directory` field present
 
-#### 9-C: Existing domain — `paths` field present (post-migration)
+For each confirmed Object Type, Link Type, and Action Type being added to this domain:
 
-Read each type file → loop through confirmed candidates and use Edit to append. Apply the same empty-array logic as 9-B.
-After all appends (including edge case where no new YAML is written), always update the domain's `last_modified` in `_index.yaml` to today's date (YYYY-MM-DD) using the Edit tool.
+- Check whether the file already exists. If it does, warn:
+  ```
+  ⚠️ <TypeKind> "<name>" already exists at <path>. Overwrite? (y/n)
+  ```
+  If n → skip this entry. If y → overwrite.
+
+- Use the Write tool to create or overwrite the appropriate file:
+  - Object Type → `.ontology/domains/<directory>/objects/<Name>.yaml`
+  - Link Type → `.ontology/domains/<directory>/links/<name>.yaml`
+  - Action Type → `.ontology/domains/<directory>/actions/<name>.yaml`
+
+File formats are identical to Step 9-A.
+
+After all writes, always update the domain's `last_modified` in `_index.yaml` to today's date (YYYY-MM-DD) using the Edit tool.
 
 ---
 
@@ -553,9 +611,11 @@ After all appends (including edge case where no new YAML is written), always upd
     Link Types    : N (...)
     Action Types  : N (...)
 
-  → .ontology/domains/<domain_name>/ontology.yaml
+  → .ontology/domains/<domain_name>/objects/  (<n> Object Type files)
+  → .ontology/domains/<domain_name>/links/    (<n> Link Type files)
+  → .ontology/domains/<domain_name>/actions/  (<n> Action Type files)
 
-[i] Tip: Run /ontologian:validate to check for schema issues, or /ontologian:visualize to see your new types in context.
+[i] Tip: Run /ontologian-validate to check for schema issues, or /ontologian-visualize to see your new types in context.
 ```
 
 **Edge case B (nothing added):**
@@ -573,7 +633,8 @@ After all appends (including edge case where no new YAML is written), always upd
 - **Missing Step 6-cleanup** → When an Object Type is removed, always cascade and update related links/action references.
 - **Skipping Step 3** → Always load existing ontology. Conflict detection depends on it.
 - **Including pending items (S) in final YAML** → Items still at `confidence: low` are not added to YAML. Show them only in the Step 8 pending section.
-- **Wrong path format for new domains** → The `path` value in `_index.yaml` must be `<domain_name>/ontology.yaml` (no leading `domains/`).
+- **Using `path:` instead of `directory:` in `_index.yaml`** → New domain entries must use the `directory:` field (e.g. `directory: ecommerce`). Never write `path:` or `paths:` fields.
+- **Writing a flat `ontology.yaml`** → Always write to per-entity files: `objects/<Name>.yaml`, `links/<name>.yaml`, `actions/<name>.yaml`. Never create a flat `ontology.yaml`.
 - **Wrong name format in output YAML** → Object Type=PascalCase, Link Type=lowercase+underscores, Action Type=snake_case.
 - **Nouns in Link Type names** → `reviews_course`, `earns_certificate` are not allowed. Use pure verb form: `reviews`, `earns`. Phrasal verbs with prepositions (`results_in`, `belongs_to`, `paid_with`) are allowed since the suffix is a preposition, not a noun.
 - **trigger_condition.field must be a property of target** → When trigger target ≠ action target, always mark as `ambiguous_trigger_condition` and get user confirmation. In `object_updated` actions, `target` is the Object whose field changes (the field owner), not an Object created as a side effect.

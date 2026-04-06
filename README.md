@@ -26,7 +26,7 @@ Run inside Claude Code:
 /plugin install ontologian@ontologian
 ```
 
-Installs 9 slash commands (`/ontologian`, `/ontologian-add`, `/ontologian-analyze`, ...) and the `ontology-consultant` proactive agent.
+Installs 8 slash commands (`/ontologian`, `/ontologian-add`, `/ontologian-analyze`, `/ontologian-consult`, `/ontologian-search`, `/ontologian-validate`, `/ontologian-sync`, `/ontologian-visualize`) and the `ontology-consultant` proactive agent.
 
 ### Update
 
@@ -49,7 +49,6 @@ No need to re-run `setup.sh` — this updates commands and agent only.
 | `/ontologian-search <keyword>` | Search across all domains (use `--type object\|link\|action` and `--domain <name>` to filter) |
 | `/ontologian-validate` | Check YAML schema and referential integrity |
 | `/ontologian-sync` | Sync local `.ontology/` to the global store |
-| `/ontologian-migrate` | Migrate domain from single-file or per-type format to per-entity format (one file per type) |
 | `/ontologian-visualize` | Render an ASCII relationship diagram |
 
 ### Consulting Agent
@@ -105,7 +104,6 @@ ontologian/
 │   │   ├── add/SKILL.md
 │   │   ├── analyze/SKILL.md
 │   │   ├── consult/SKILL.md
-│   │   ├── migrate/SKILL.md
 │   │   ├── search/SKILL.md
 │   │   ├── status/SKILL.md
 │   │   ├── sync/SKILL.md

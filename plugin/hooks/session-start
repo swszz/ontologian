@@ -16,7 +16,7 @@ escape_for_json() {
     printf '%s' "$s"
 }
 
-context="ontologian plugin is active. Use these slash commands to manage your ontology:\\n- /ontologian — Show domain list and status summary\\n- /ontologian-add — Add a new type interactively\\n- /ontologian-analyze — Derive ontology from free-form requirements\\n- /ontologian-search — Search by keyword across all domains\\n- /ontologian-validate — Check YAML schema and referential integrity\\n- /ontologian-sync — Sync to global store\\n- /ontologian-migrate — Migrate domain to per-entity format\\n- /ontologian-visualize — Render ASCII relationship diagram\\n- /ontologian-consult — Start a Palantir-grade ontology consulting session\\n- /ontologian-review — Run 3-round Engineering Head Council review"
+context="ontologian plugin is active. Use these slash commands to manage your ontology:\\n- /ontologian — Show domain list and status summary\\n- /ontologian-add — Add a new type interactively\\n- /ontologian-analyze — Derive ontology from free-form requirements\\n- /ontologian-search — Search by keyword across all domains\\n- /ontologian-validate — Check YAML schema and referential integrity\\n- /ontologian-sync — Sync to global store\\n- /ontologian-visualize — Render ASCII relationship diagram\\n- /ontologian-consult — Start a Palantir-grade ontology consulting session"
 
 if [ -n "${CURSOR_PLUGIN_ROOT:-}" ]; then
   printf '{\n  "additional_context": "%s"\n}\n' "$context"

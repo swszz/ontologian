@@ -55,7 +55,7 @@ No domains registered. Enter a name for the new domain:
 
 Wait for user input.
 
-- **Number selection** (existing domain): Store that domain's `name`, `path`/`paths`/`directory` fields in memory. If the entry has a `directory` field, store that value for use in Step 7. Proceed to Step 4.
+- **Number selection** (existing domain): Store that domain's `name` and `directory` fields in memory. Proceed to Step 4.
 - **"N" or new domain text**: Prompt for a domain name (lowercase letters, hyphens, and underscores allowed), then ask the following questions **one at a time**:
 
   ```
@@ -75,7 +75,12 @@ Wait for user input.
   Enter a number (default 1 — experimental):
   ```
 
-  Store as `new_domain = { name, description, domain_owner, stability, semantic_version: "1.0.0" }`. Proceed to Step 4.
+    ```
+  Does this domain depend on another domain? (press Enter to skip, or enter domain names separated by commas):
+  ```
+  Store non-empty input as `new_domain.dependency_direction` (split by comma, trim whitespace, store as array). If empty, omit the field.
+
+  Store as `new_domain = { name, description, domain_owner, stability, semantic_version: "1.0.0", dependency_direction }`. Omit `dependency_direction` from the stored object if the user pressed Enter. Proceed to Step 4.
 
 ### Step 4: Select a type
 
@@ -131,17 +136,27 @@ Store the selection (`object` / `link` / `action`) in memory and proceed to the 
 
 Ask the following questions **one at a time** in order.
 
-1. **Name and description** (PascalCase):
+1. **Name** (PascalCase):
    ```
-   Enter the Object Type name and description.
-   (Format: "Name, Description"  e.g. "Product, A sellable item"  /  Name only: "Product")
+   Enter the Object Type name (PascalCase, e.g. Product):
    ```
 
-   If the name is not PascalCase (first letter uppercase, only letters/digits, no spaces/underscores/hyphens), re-prompt immediately:
+   If the name is not PascalCase (first letter uppercase, only letters/digits, no spaces/underscores/hyphens), re-prompt:
    ```
    The name must be PascalCase (e.g. Product). Please try again:
    ```
-   Repeat until a valid value is entered.
+   Repeat until valid.
+
+   **Description (required):**
+   ```
+   Enter a description for this Object Type (required — what real-world entity does this represent?):
+   ```
+
+   If the user presses Enter without entering text, re-prompt:
+   ```
+   A description is required for Object Types. Please enter a description:
+   ```
+   Re-prompt continuously until a non-empty value is provided.
 
 2. **Collect properties** (repeat the following prompt):
 
@@ -192,9 +207,15 @@ Ask the following questions **one at a time** in order.
      ```
      Store the value in the `expression` field if provided.
 
-   Then ask for a description:
+   Then ask for a description. First, check if the property name exactly matches or ends with any of: `status`, `state`, `type`, `kind`, `mode`, `stage`, `phase`, `category`, `level`, `_status`, `_state`, `_type`. If it matches, output this hint before the prompt:
    ```
-   Enter a description for this field (meaning, allowed values, context, etc. — press Enter to skip):
+   [i] Status-pattern field detected. Use "Allowed values: X, Y, Z" in the description to pass validation.
+       Example: "Order status. Allowed values: pending, active, cancelled"
+   ```
+
+   Then prompt:
+   ```
+   Enter a description for this field (press Enter to skip):
    ```
    If provided, store in the property's `description` field. If empty, omit the field.
 
@@ -203,7 +224,7 @@ Ask the following questions **one at a time** in order.
 Store the collected data as a `new_entry` object:
 ```yaml
 name: <PascalCase name>
-description: "<description>"      # only if provided
+description: "<description>"
 properties:
   - name: <property_name>
     type: <type>
@@ -284,10 +305,16 @@ Ask the following questions **one at a time** in order.
    ```
    Repeat until valid.
 
-2. **Description**:
+2. **Description** (required):
    ```
-   Enter a description (optional, press Enter to skip):
+   Enter a description for this Action Type (required — what operation does this perform?):
    ```
+
+   If the user presses Enter without entering text, re-prompt:
+   ```
+   A description is required for Action Types. Please enter a description:
+   ```
+   Re-prompt continuously until a non-empty value is provided.
 
 3. **target** (target Object Type):
    ```
@@ -356,17 +383,17 @@ Ask the following questions **one at a time** in order.
 Store as `new_entry`:
 ```yaml
 name: <snake_case name>
-description: "<description>"      # only if provided
+description: "<description>"
 target: <ObjectType>
 trigger: <trigger>
-trigger_condition:                 # only when trigger=object_updated and at least one value provided
+trigger_condition:                 # only when trigger=object_updated and field is provided
   field: <field_name>
   from: <value>
   to: <value>
 parameters:                        # only when at least one parameter exists
   - name: <param_name>
     type: <type>
-    required: true                 # omit when true (it's the default); include only when false
+    required: false                # only when false; omit when true (true is the default)
 ```
 
 ---
@@ -424,23 +451,65 @@ Proceed with adding the above? (y / n / edit)
   ```
   Cancelled.
   ```
-- **`edit`** → List the editable fields with numbers:
+- **`edit`** → List the editable fields with numbers based on the type being added:
+
+  **Object Type:**
   ```
   Select a field to edit:
-    1. <field_1> (current: <value_1>)
-    2. <field_2> (current: <value_2>)
-    ...
-  Enter a number:
-  ```
-  For example, for an Object Type:
-  ```
-  Select a field to edit:
-    1. name (current: User)
-    2. description (current: Service user)
+    1. name (current: <value>)
+    2. description (current: <value>)
     3. properties
   Enter a number:
   ```
   Re-prompt only the selected field, then return to Step 6.
+
+  When `properties` is selected, show a sub-menu:
+  ```
+  Edit properties:
+    1. Add a new property
+    2. Remove a property
+    3. Edit an existing property
+  Enter a number:
+  ```
+  - **1. Add**: Run the full property collection loop from Step 5-A (one property at a time), then return to Step 6 preview.
+  - **2. Remove**: Display a numbered list of current property names; remove the selected entry; return to Step 6 preview.
+  - **3. Edit**: Display a numbered list of current property names; select one; re-run the property prompts for that entry pre-populated with current values; replace the old entry; return to Step 6 preview.
+
+  **Link Type:**
+  ```
+  Select a field to edit:
+    1. name (current: <value>)
+    2. from (current: <value>)
+    3. to (current: <value>)
+    4. cardinality (current: <value>)
+    5. description (current: <value>)
+  Enter a number:
+  ```
+  Re-prompt only the selected field using the same validation rules from Step 5-B, then return to Step 6 preview.
+
+  **Action Type:**
+  ```
+  Select a field to edit:
+    1. name (current: <value>)
+    2. description (current: <value>)
+    3. target (current: <value>)
+    4. trigger (current: <value>)
+    5. trigger_condition (current: <field/from/to or 'none'>)
+    6. parameters
+  Enter a number:
+  ```
+  Re-prompt only the selected field using the same validation rules from Step 5-C, then return to Step 6 preview.
+
+  When `parameters` is selected, show a sub-menu:
+  ```
+  Edit parameters:
+    1. Add a new parameter
+    2. Remove a parameter
+  Enter a number:
+  ```
+  - **1. Add**: Run the parameter collection loop from Step 5-C (name → type → required), then return to Step 6 preview.
+  - **2. Remove**: Display a numbered list of current parameter names; remove the selected entry; return to Step 6 preview.
+
 - **`y`** → Proceed to Step 7.
 
 ---
@@ -467,6 +536,9 @@ Write the `new_entry` contents directly into that file (not wrapped in an array 
     stability: <stability>
     semantic_version: "1.0.0"
     directory: <domain_name>
+    dependency_direction:          # only if declared; omit entirely if not provided
+      - <upstream_domain_1>        # one entry per upstream domain (add more lines as needed)
+      - <upstream_domain_2>        # omit entirely if user pressed Enter
     last_modified: <today_date>   # YYYY-MM-DD
 ```
 
@@ -479,54 +551,13 @@ domains:
     stability: <stability>
     semantic_version: "1.0.0"
     directory: <domain_name>
+    dependency_direction:          # only if declared; omit entirely if not provided
+      - <upstream_domain_1>        # one entry per upstream domain (add more lines as needed)
+      - <upstream_domain_2>        # omit entirely if user pressed Enter
     last_modified: <today_date>
 ```
 
-#### 7-B: Existing domain — pre-migration (`path` field present)
-
-> **Note:** This domain uses the legacy single-file format. User must run `/ontologian-migrate` to upgrade to the new per-entity format.
-
-Target file: `.ontology/domains/<path>` (e.g. `.ontology/domains/ecommerce/ontology.yaml`)
-
-Read the file, then use the Edit tool to append `new_entry` to the appropriate type array.
-
-- **Object Type** → append to `object_types`
-- **Link Type** → append to `link_types`
-- **Action Type** → append to `action_types`
-
-If the array is `[]` (empty): use Edit to replace that line:
-
-```
-old: "object_types: []"
-new:
-object_types:
-  - name: <name>
-    ...
-```
-
-If the array has existing items: use Edit to insert the new YAML block after the last item (just before the next top-level key).
-
-Update the domain's `last_modified` in `_index.yaml` to today's date (Edit tool).
-
-#### 7-C: Existing domain — post-migration (`paths` field present)
-
-> **Note:** This domain uses the per-type file format. User must run `/ontologian-migrate` to upgrade to the new per-entity format.
-
-Determine the target file by type:
-
-| Type | Field | Example path |
-|------|-------|-------------|
-| Object Type | `paths.object_types` | `.ontology/domains/ecommerce/object_types.yaml` |
-| Link Type | `paths.link_types` | `.ontology/domains/ecommerce/link_types.yaml` |
-| Action Type | `paths.action_types` | `.ontology/domains/ecommerce/action_types.yaml` |
-
-Resolve the actual path as `.ontology/domains/<paths.<type>_types>`.
-
-Read the file and append `new_entry` to the array (Edit tool). Apply the same empty-array / existing-items logic as 7-B.
-
-Update the domain's `last_modified` in `_index.yaml` (Edit tool).
-
-#### 7-D: Existing domain — new format (`directory` field present)
+#### 7-B: Existing domain (`directory` field present)
 
 Target directories:
 - Object Type: `.ontology/domains/<directory>/objects/`
@@ -542,7 +573,7 @@ If it exists, warn:
 If n → cancel. If y or file doesn't exist → Use the Write tool to create the file:
 ```yaml
 name: <Name>
-description: "<description>"  # only if provided
+description: "<description>"
 properties:
   - name: <property_name>
     type: <type>
@@ -567,7 +598,7 @@ If it exists → warn and ask to overwrite.
 Write:
 ```yaml
 name: <name>
-description: "<description>"  # only if provided
+description: "<description>"
 target: <ObjectType>
 trigger: <trigger>
 trigger_condition:  # only when object_updated and field provided
@@ -590,10 +621,8 @@ Update `last_modified` in `_index.yaml` to today's date after writing.
 - `auto` → proceed immediately
 - `off` → skip
 
-**Proceed**: Write-copy the modified domain file(s) + `_index.yaml` to `<global_path>/domains/`.
-- Pre-migration: `<global_path>/domains/<domain_name>/ontology.yaml`
-- Post-migration: the modified type file (one file)
-- Always overwrite `<global_path>/domains/_index.yaml`
+**Proceed**: For each file that was written in Step 7, use the Read tool to read the source file, then use the Write tool to write its contents to the corresponding path under `<global_path>/domains/`. Repeat for each file individually.
+- Always overwrite `<global_path>/domains/_index.yaml` last: Read `.ontology/domains/_index.yaml` → Write to `<global_path>/domains/_index.yaml`.
 
 ---
 
@@ -608,7 +637,6 @@ Where `<file_path>` is the actual path of the file created:
 - Object Type: `.ontology/domains/<directory>/objects/<Name>.yaml`
 - Link Type: `.ontology/domains/<directory>/links/<name>.yaml`
 - Action Type: `.ontology/domains/<directory>/actions/<name>.yaml`
-- Pre-migration domains (path/paths): use the existing path format as before
 
 `<type_label>` mapping:
 - Object Type → `Object Type`
@@ -622,7 +650,6 @@ Where `<file_path>` is the actual path of the file created:
 - **Asking multiple questions at once** → Always ask one question at a time and wait for a response.
 - **Including `computed: false` or `primary: false`** → Omit the field entirely when the value is false. Only include it when `true`.
 - **Forgetting to update `last_modified` in `_index.yaml`** → Always update it after modifying any YAML file.
-- **Wrong path format for new domains** → The `path` value in `_index.yaml` must be `<domain_name>/ontology.yaml` (no leading `domains/`).
 - **Skipping name format validation** → Object Type=PascalCase, Action Type=snake_case, Link Type=lowercase+underscores. Re-prompt until a valid value is entered.
-- **Using `path:` in `_index.yaml` for new domains** → New domains always use `directory:` field.
-- **Writing to a flat `ontology.yaml` for new domains** → Always write to `objects/`, `links/`, `actions/` subdirectories.
+- **Using `path:` or `paths:` in `_index.yaml`** → Domains always use the `directory:` field.
+- **Writing to a flat `ontology.yaml`** → Always write to `objects/`, `links/`, `actions/` subdirectories.

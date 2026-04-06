@@ -34,15 +34,11 @@ Output and exit.
 
 Iterate over the `domains` array in `_index.yaml` and read each domain's type data.
 
-**Determining migration status:**
-
-- If `path` is present → Read the single file at `.ontology/domains/<path>`. Extract `object_types`, `link_types`, `action_types` arrays.
-- If `paths` is present → Compose paths as `.ontology/domains/<paths.X>` for each of `paths.object_types`, `paths.link_types`, and `paths.action_types`. Read each file separately and extract the corresponding array.
-- If the `directory` field is present → new per-entity format:
-  - Glob `.ontology/domains/<directory>/objects/*.yaml` → Read each file → collect into `object_types[]`
-  - Glob `.ontology/domains/<directory>/links/*.yaml` → Read each file → collect into `link_types[]`
-  - Glob `.ontology/domains/<directory>/actions/*.yaml` → Read each file → collect into `action_types[]`
-  - Each file contains the entity definition directly (no wrapper key). A `objects/User.yaml` file is read as a single object type entry.
+All domains use the `directory` format:
+- Glob `.ontology/domains/<directory>/objects/*.yaml` → read each → collect into `object_types[]`
+- Glob `.ontology/domains/<directory>/links/*.yaml` → read each → collect into `link_types[]`
+- Glob `.ontology/domains/<directory>/actions/*.yaml` → read each → collect into `action_types[]`
+Each file is a single entity definition with no wrapper key.
 
 If a domain file cannot be read, add the following to the error list and skip validation for that domain:
 
@@ -110,7 +106,7 @@ After validating required fields, apply these name-pattern checks:
 Warning format:
 ```
 ⚠ [<domain_name>] Object Type '<name>' > property '<prop_name>'
-  → type: '<prop_name>' suggests <expected_type> but is declared as '<actual_type>'.
+  → type: '<actual_type>' — name pattern suggests <expected_type> but is declared as '<actual_type>'.
     Change to <expected_type> if this field holds a real <date/boolean/numeric> value.
 ```
 
@@ -119,7 +115,7 @@ Warning format:
 For each property where:
 - `type` is `string` AND
 - `name` exactly matches any of: `status`, `state`, `type`, `kind`, `mode`, `stage`, `phase`, `category`, `level`
-  OR `name` ends with `_status`, `_state`, `_type` (case-insensitive, e.g. `order_status`, `account_type`)
+  OR `name` ends with `_status`, `_state`, `_type`, `_kind`, `_mode`, `_stage`, `_phase`, `_category`, `_level` (case-insensitive, e.g. `order_status`, `account_type`, `delivery_stage`)
 
 Check if `description` contains the substring `"Allowed values:"`. If not, add a MAJOR warning:
 ```
@@ -127,6 +123,33 @@ Check if `description` contains the substring `"Allowed values:"`. If not, add a
   → description: status-pattern field missing allowed values documentation.
     Add 'Allowed values: X, Y, Z' to the description (e.g. "Allowed values: pending, active, cancelled").
 ```
+
+**Empty properties check (add as MAJOR warning):**
+
+If `properties` is absent or an empty array, add a MAJOR warning:
+```
+⚠ [<domain_name>] Object Type '<name>'
+  → properties: no properties defined. Object Types should declare at least one property
+    (typically an identifier). Add properties or verify this is intentional.
+```
+
+**Primary key completeness check (add as MAJOR warning / error):**
+
+After validating all properties of an Object Type (skip if `properties` is absent or an empty array — covered by the empty properties check above):
+
+- Count properties where `primary: true`. Call this `pk_count`.
+- If `pk_count == 0`: add a MAJOR warning:
+  ```
+  ⚠ [<domain_name>] Object Type '<name>'
+    → properties: no primary key defined. Add primary: true to the identifier property
+      (e.g. user_id, order_id) so instances can be uniquely resolved.
+  ```
+- If `pk_count > 1`: add an error:
+  ```
+  [<domain_name>] Object Type '<name>'
+    → properties: <pk_count> properties marked primary: true. Exactly one primary key is allowed.
+      Remove primary: true from all but the identifier property.
+  ```
 
 #### Link Type validation
 
@@ -177,7 +200,7 @@ If `trigger` is `manual` and `parameters` is absent or an empty array, add a MAJ
 ```
 ⚠ [<domain_name>] Action Type '<name>'
   → trigger: manual actions should declare at least one parameter to document required inputs.
-    If this action truly takes no inputs, add parameters: [] explicitly with a comment in description.
+    If this action truly takes no inputs, document that explicitly in the action's description field.
     Example parameters: approval_reason (string), override_flag (boolean)
 ```
 
@@ -188,7 +211,7 @@ If `trigger` is `object_updated` and no `trigger_condition` block is present, ad
 ⚠ [<domain_name>] Action Type '<name>'
   → trigger: object_updated without trigger_condition fires on every property change.
     Add a trigger_condition.field to specify which field change should trigger this action.
-    If all-property firing is intentional (e.g. audit logging), add trigger_condition: { field: "*" } to document intent.
+    If all-property firing is intentional (e.g. audit logging), document this in the action's `description` field instead of using a wildcard field value.
 ```
 
 **`trigger_condition` validation (optional field):**
@@ -213,8 +236,15 @@ If a `parameters` array exists, validate each parameter:
 |-------|------|
 | `name` | Required |
 | `type` | Required. Allowed values: `string`, `int`, `float`, `boolean`, `date`, `datetime` |
+| `required` | Optional. If present, allowed values: `true`, `false`. Any other value is an error. |
 
 **Parameter with no `name`**: Record as a schema error and skip further validation for that parameter.
+
+If `required` is present with an invalid value, add an error:
+```
+[<domain_name>] Action Type '<name>' > parameter '<param_name>'
+  → required: invalid value '<value>'. Allowed: true, false. Omit this field when the parameter is required (true is the default).
+```
 
 **Error message format:**
 
@@ -233,8 +263,6 @@ Where:
 - Object Types → `objects/<Name>.yaml`
 - Link Types → `links/<name>.yaml`
 - Action Types → `actions/<name>.yaml`
-
-For `path`/`paths` domains, keep the existing plain text format.
 
 Examples:
 
@@ -265,32 +293,36 @@ Warning examples:
 
 For each domain, first collect the list of Object Type names (`object_names`) within that domain.
 
-**Cross-domain reference policy:** `from`, `to`, and `target` fields may only reference Object Types within the same domain. References to types in other domains are treated as errors.
+**Cross-domain reference policy:**
+
+For each Link Type `from`/`to` and Action Type `target`, first check whether the referenced Object Type name exists in the current domain's type list.
+
+If not found in the current domain, check all other registered domains:
+- If the type is found in another domain (`<other_domain>`):
+  - **If the current domain's `_index.yaml` entry declares `dependency_direction` that includes `<other_domain>`**: emit a MAJOR warning (not an error):
+    ```
+    ⚠ [<domain_name>] <TypeKind> '<name>'
+      → <field>: '<value>' is defined in domain '<other_domain>', not '<domain_name>'.
+        This cross-domain reference is declared via dependency_direction and is intentional.
+        Consider using a reference ID property instead of a direct link for better decoupling.
+    ```
+  - **If the current domain does NOT declare `dependency_direction` including `<other_domain>`**: emit an error:
+    ```
+    [<domain_name>] <TypeKind> '<name>'
+      → <field>: '<value>' does not exist in domain '<domain_name>' and no dependency_direction
+        to '<other_domain>' is declared.
+        Either add '<value>' to '<domain_name>', declare dependency_direction: ['<other_domain>']
+        in _index.yaml, or use a reference ID property.
+    ```
+- If the type is not found in any registered domain: emit an error (unknown type).
 
 #### Link Type reference validation
 
-Check whether each Link Type's `from` and `to` values exist in `object_names` for the same domain.
-
-If not found, add an error:
-
-```
-[<domain_name>] Link Type '<link_name>'
-  → from: '<value>' does not exist as an Object Type.
-
-[<domain_name>] Link Type '<link_name>'
-  → to: '<value>' does not exist as an Object Type.
-```
+Check whether each Link Type's `from` and `to` values exist in `object_names` for the same domain. Apply the cross-domain reference policy above if not found in the current domain.
 
 #### Action Type reference validation
 
-Check whether each Action Type's `target` value exists in `object_names` for the same domain.
-
-If not found, add an error:
-
-```
-[<domain_name>] Action Type '<action_name>'
-  → target: '<value>' does not exist as an Object Type.
-```
+Check whether each Action Type's `target` value exists in `object_names` for the same domain. Apply the cross-domain reference policy above if not found in the current domain.
 
 If `trigger_condition` exists and `field` is set, verify that the `field` exists as a property of the `target` Object Type.
 
@@ -301,6 +333,14 @@ If not found, add an error:
   → trigger_condition.field: '<field_value>' does not exist as a property of target '<target_name>'.
 ```
 
+- If `field` is set to `"*"`, `"any"`, or any other wildcard/placeholder value, add an error:
+  ```
+  [<domain_name>] Action Type '<name>'
+    → trigger_condition.field: wildcard value '<value>' is not a valid property name.
+      Specify the exact property name to watch, or remove trigger_condition entirely to
+      document intentional all-property firing in the action's description field.
+  ```
+
 ### Step 5b: Governance metadata validation
 
 For each domain entry in `_index.yaml`, check for governance metadata:
@@ -310,6 +350,7 @@ For each domain entry in `_index.yaml`, check for governance metadata:
 | `domain_owner` | MAJOR | `Domain '<name>' has no domain_owner. Add domain_owner: <team-name> to the _index.yaml entry.` |
 | `stability` | MAJOR | `Domain '<name>' has no stability. Add stability: stable\|experimental\|deprecated to the _index.yaml entry.` |
 | `semantic_version` | MINOR | `Domain '<name>' has no semantic_version. Add semantic_version: 1.0.0 to the _index.yaml entry.` |
+| `dependency_direction` | — | Optional field. No warning if absent. Validated separately below. |
 
 Allowed values for `stability`: `stable`, `experimental`, `deprecated`. If set to another value, add an error:
 ```
@@ -319,21 +360,14 @@ Allowed values for `stability`: `stable`, `experimental`, `deprecated`. If set t
 
 Emit all governance metadata issues as warnings (⚠), not errors. Include them in the warnings list.
 
-### Step 5a: Stale-file check after migration
+**`dependency_direction` domain existence check:**
 
-For each domain entry in `_index.yaml` that uses a `paths` field (post-migration domain):
-- Derive the expected legacy path: replace the `paths.object_types` value's filename with `ontology.yaml`.
-  Example: `paths.object_types = ecommerce/object_types.yaml` → legacy path = `ecommerce/ontology.yaml`
-- Use Glob to check if `.ontology/domains/<legacy_path>` exists.
-- If it does, add a MINOR warning:
-  ```
-  ⚠ [<domain_name>] Stale pre-migration file detected:
-    .ontology/domains/<legacy_path>
-    This file is no longer used (domain is now reading from paths.*).
-    Delete it to prevent confusion:
-      rm .ontology/domains/<legacy_path>
-    Or run /ontologian:migrate and choose to delete it interactively.
-  ```
+If a domain entry declares `dependency_direction: [<name1>, <name2>, ...]`, verify that each referenced name appears in the `domains` array of `_index.yaml`. If a referenced domain is not found, emit a MAJOR warning:
+```
+⚠ [<domain_name>] _index.yaml
+  → dependency_direction: '<ref_name>' does not match any registered domain.
+    Registered domains: <list>. Check for typos or missing domain registration.
+```
 
 ### Step 5-C: Circular trigger detection
 
@@ -377,17 +411,31 @@ If duplicates found, add an error:
 
 ```
 ✓ All domains passed validation (<N> domains, <N> Objects, <N> Links, <N> Actions)
-[i] Tip: Run /ontologian:visualize to render relationship diagrams, or /ontologian:sync to push to the global store.
+[i] Tip: Run /ontologian-visualize to render relationship diagrams, or /ontologian-sync to push to the global store.
 ```
 
 **No errors but warnings exist:**
 
+Count warnings by severity before rendering:
+- MAJOR warnings: governance issues (missing domain_owner, stability, etc.), implementation artifact names, missing primary keys, type heuristic mismatches, trigger_condition issues
+- SUGGESTION/MINOR warnings: missing descriptions, many_to_many advisories, computed property without expression
+
 ```
-✓ Validation passed — <W> recommendation(s)
+✓ Validation passed — <MAJOR> MAJOR warning(s), <MINOR> suggestion(s)
 
 ⚠ <warning1>
 ⚠ <warning2>
 ...
+```
+
+If there are zero MAJOR warnings, omit the MAJOR count and render as:
+```
+✓ Validation passed — <W> suggestion(s)
+```
+
+If there are zero suggestions (only MAJOR warnings):
+```
+✓ Validation passed — <MAJOR> MAJOR warning(s)
 ```
 
 `N` is the total count across all domains.

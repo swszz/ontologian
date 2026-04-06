@@ -45,11 +45,13 @@ If the `domains` array is absent or empty, output the following and **exit immed
 No domains to sync. (domains array is empty)
 ```
 
-Collect the file list from each domain entry. For each entry, determine migration status:
+Collect the file list from each domain entry. All domains use the `directory` format. For each domain in the `domains` array, use the `directory` field to enumerate actual files:
 
-- If `path` is present → 1 file: `<path>` (e.g. `ecommerce/ontology.yaml`)
-- If `paths` is present → add `paths.object_types`, `paths.link_types`, and `paths.action_types` to the list (e.g. `ecommerce/object_types.yaml`). Skip any missing keys.
-- If `directory` is present → new per-entity format: add all files under `.ontology/domains/<directory>/objects/`, `.ontology/domains/<directory>/links/`, and `.ontology/domains/<directory>/actions/` to the list.
+- Glob `.ontology/domains/<directory>/objects/*.yaml` → add each matched path's relative segment (e.g. `ecommerce/objects/Product.yaml`) to `sync_files`
+- Glob `.ontology/domains/<directory>/links/*.yaml` → add each matched path's relative segment
+- Glob `.ontology/domains/<directory>/actions/*.yaml` → add each matched path's relative segment
+
+If a subdirectory does not exist or Glob returns no matches, skip that subdirectory and continue.
 
 Store the collected file list as the `sync_files` array in memory.
 Also include `_index.yaml` itself as a sync target.
@@ -63,11 +65,10 @@ Show `_index.yaml` as: `.ontology/domains/_index.yaml` → `<global_path>/domain
 ```
 ## Sync Preview
 Local → Global (<global_path>)
-  ecommerce/ontology.yaml     → <global_path>/domains/ecommerce/ontology.yaml
-  ecommerce/object_types.yaml → <global_path>/domains/ecommerce/object_types.yaml
-  ecommerce/link_types.yaml   → <global_path>/domains/ecommerce/link_types.yaml
-  ecommerce/action_types.yaml → <global_path>/domains/ecommerce/action_types.yaml
-  domains/_index.yaml         → <global_path>/domains/_index.yaml
+  ecommerce/objects/Product.yaml → <global_path>/domains/ecommerce/objects/Product.yaml
+  ecommerce/links/places.yaml    → <global_path>/domains/ecommerce/links/places.yaml
+  ecommerce/actions/send_welcome_email.yaml → <global_path>/domains/ecommerce/actions/send_welcome_email.yaml
+  domains/_index.yaml            → <global_path>/domains/_index.yaml
 Total: N file(s)
 
 Proceed? (y/n)
@@ -104,6 +105,8 @@ If it already exists, skip.
 Before copying any files, ensure all required directories exist in two stages:
 
 **Stage 1 — Create the domains root:**
+
+Use the Bash tool to run:
 ```
 mkdir -p <global_path>/domains
 ```
@@ -114,13 +117,13 @@ If this fails (e.g. permission error), output the following and **exit immediate
 ```
 
 **Stage 2 — Create per-domain directories:**
-For each domain name in the `domains` array of `_index.yaml`:
+For each domain in the `domains` array of `_index.yaml`, use the `directory` field. Use the Bash tool to run:
 ```
-mkdir -p <global_path>/domains/<domain_name>
+mkdir -p <global_path>/domains/<directory>
 ```
 If any per-domain mkdir fails, output and **exit immediately**:
 ```
-✗ Sync failed: cannot create directory <global_path>/domains/<domain_name>
+✗ Sync failed: cannot create directory <global_path>/domains/<directory>
   All directories must be confirmed before writing files.
 ```
 
@@ -128,48 +131,28 @@ Only proceed to Step 6 after all directories are confirmed.
 
 ### Step 6: Copy domain files
 
-Iterate over the `sync_files` array and copy each file.
+All domains use the `directory` format. Iterate over all files collected in `sync_files`. For each file in the array:
 
-For each file:
+1. Use the Read tool to read the source file at `.ontology/domains/<relative_path>`
+2. Use the Write tool to write the content to `<global_path>/domains/<relative_path>`
 
-1. Use the Read tool to read the local file: `.ontology/domains/<file>`
-2. Use the Write tool to write to the global path: `<global_path>/domains/<file>`
+Where `<relative_path>` is the path segment after `.ontology/domains/` (e.g. `ecommerce/objects/Product.yaml`).
 
-**If `directory` is present (new per-entity format):**
-Copy the entire domain directory to `<global_path>/domains/<domain_name>/`:
-- All files in `.ontology/domains/<directory>/objects/`
-- All files in `.ontology/domains/<directory>/links/`
-- All files in `.ontology/domains/<directory>/actions/`
+This covers all files in `objects/`, `links/`, and `actions/` subdirectories for each domain.
 
-Use Bash:
-```
-cp -r .ontology/domains/<directory>/objects <global_path>/domains/<directory>/
-cp -r .ontology/domains/<directory>/links <global_path>/domains/<directory>/
-cp -r .ontology/domains/<directory>/actions <global_path>/domains/<directory>/
-```
-
-Always overwrite `<global_path>/domains/_index.yaml`.
-
-If a read or write fails, add the filename to the warnings list and **continue with the next file**:
+If a Read or Write fails for any individual file, add to the warnings list and **continue with the next file**:
 
 ```
-⚠ Copy failed: <file>
+⚠ Copy failed: <relative_path>
 ```
 
-Do not stop copying remaining files on failure.
+Do not stop copying remaining files on failure. Always overwrite destination files if they exist.
 
-### Step 7: Copy _index.yaml
+After copying all domain files, always overwrite the global `_index.yaml`:
+1. Use the Read tool to read `.ontology/domains/_index.yaml`
+2. Use the Write tool to write to `<global_path>/domains/_index.yaml`
 
-Use the Read tool to read `.ontology/domains/_index.yaml`.
-Use the Write tool to write to `<global_path>/domains/_index.yaml`.
-
-If it fails, add to the warnings list and continue:
-
-```
-⚠ Copy failed: domains/_index.yaml
-```
-
-### Step 8: Output completion message
+### Step 7: Output completion message
 
 Calculate the number of successfully copied files (`N` = total target files − failed files).
 

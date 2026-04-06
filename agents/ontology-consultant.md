@@ -44,6 +44,15 @@ description: |
 model: opus
 color: cyan
 tools: Glob, Read, Write, Edit, Bash
+skills:
+  - status
+  - add
+  - analyze
+  - validate
+  - visualize
+  - search
+  - sync
+  - migrate
 ---
 
 # Ontology Consultant — Palantir-Grade Domain Architect
@@ -218,7 +227,7 @@ candidate_actions: []   # { name, description, trigger, target, parameters[], co
 uncertain_items: []
 ```
 
-Apply extraction rules (same as `ontologian:analyze` Steps 4-A through 4-E):
+Apply extraction rules (same as the `analyze` skill Steps 4-A through 4-E):
 - **4-A**: Extract Object Type candidates — nouns with independent lifecycle and attributes.
   PascalCase names. Exclude FK properties. Default property type to `string` if unclear.
 - **4-B**: Extract Link Type candidates — snake_case pure verbs. Direction: owner→owned preferred.
@@ -263,7 +272,7 @@ Recommended resolutions:
 
 ### Phase 3: Semantic Layer Design — Palantir Patterns
 
-Present analysis results (same format as `ontologian:analyze` Step 5), then resolve uncertain items one at a time.
+Present analysis results (same format as `analyze` skill Step 5), then resolve uncertain items one at a time.
 
 After resolution, apply 4 Palantir enrichment patterns:
 
@@ -391,26 +400,17 @@ Write this as-is? (y / n / edit)
 
 Process domains in dependency order (leaf domains — those with no `dependency_direction` — first).
 
-For each domain, apply the write logic from `ontologian:add` Steps 7-A through 7-C:
-- New domain → Write `ontology.yaml`, update `_index.yaml` with `path` field
-- Existing domain with `path` → Edit the single `ontology.yaml`
-- Existing domain with `paths` → Edit the appropriate separate type files
+For each domain, invoke the `add` skill to write the domain file:
+- New domain → the `add` skill creates `ontology.yaml` and updates `_index.yaml`
+- Existing domain → the `add` skill appends to the appropriate file (pre- or post-migration)
 
 Always update `last_modified` in `_index.yaml` after each domain.
 
 **Step 19: Automatic validation**
 
-After all domains are written, read each domain file and validate:
+After all domains are written, invoke the `validate` skill.
 
-Schema checks:
-- Object Type: `name` (required, PascalCase), `description` (required), properties have `name` + `type`
-- Link Type: `name` (required), `from`/`to` (required, must exist as Object Types in same domain),
-  `cardinality` (required, must be one of: `one_to_one`, `one_to_many`, `many_to_many`, `many_to_one`)
-- Action Type: `name` (required), `description` (required), `target` (required, must exist as Object Type),
-  `trigger` (required, must be `object_created|object_updated|object_deleted|manual`),
-  `trigger_condition.field` must be a property of `target` when present
-
-If errors found:
+If the `validate` skill reports errors:
 ```
 ⚠️ Validation failed (<domain_name>)
   [ERROR] <type_name>: <error_message>
@@ -425,7 +425,7 @@ Fix errors before proceeding. Do not exit with a broken ontology.
 
 **Step 20: Visualize all domains**
 
-For each domain, generate the ASCII visualization (applying `ontologian:visualize` logic):
+For each domain, invoke the `visualize` skill:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

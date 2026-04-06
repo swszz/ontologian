@@ -5,13 +5,13 @@
   },
   "metadata": {
     "description": "Ontologian plugin for Claude Code",
-    "version": "1.3.0"
+    "version": "1.4.0"
   },
   "plugins": [
     {
       "name": "ontologian",
       "description": "Palantir ontology concepts (Object Type, Link Type, Action Type) for knowledge management in Claude Code",
-      "version": "1.3.0"
+      "version": "1.4.0"
     }
   ]
 }

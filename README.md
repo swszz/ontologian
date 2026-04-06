@@ -96,25 +96,34 @@ The consulting session covers 6 phases:
 
 ```
 ontologian/
-├── commands/
-│   ├── ontologian.md            # /ontologian
-│   └── ontologian/              # /ontologian:<name>
+├── skills/                      # Operation logic — single source of truth
+│   ├── status.md                # domain list & summary
+│   ├── add.md
+│   ├── analyze.md
+│   ├── validate.md
+│   ├── search.md
+│   ├── sync.md
+│   ├── migrate.md
+│   └── visualize.md
+├── commands/                    # Thin entry points — invoke the corresponding skill
+│   ├── ontologian.md            # /ontologian  → status skill
+│   └── ontologian/              # /ontologian:<name> → <name> skill
 │       ├── add.md
 │       ├── analyze.md
-│       ├── consult.md
+│       ├── consult.md           # → ontology-consultant agent
 │       ├── migrate.md
 │       ├── search.md
 │       ├── sync.md
 │       ├── validate.md
 │       └── visualize.md
 ├── agents/
-│   └── ontology-consultant.md   # Proactive consulting agent
+│   └── ontology-consultant.md   # Proactive agent — orchestrates skills
 ├── hooks/
 │   └── hooks.json
 └── setup.sh                     # Marketplace registration script
 ```
 
-`commands/` is the single source of truth. Edit files there directly.
+**Architecture:** skills hold all logic. Commands and agent delegate to skills. To modify behavior, edit `skills/` only.
 
 ---
 

@@ -23,7 +23,7 @@ Adds Ontologian's GitHub repo as a known marketplace source in `~/.claude/settin
 Run inside Claude Code:
 
 ```
-/plugin install ontologian@ontologian
+/plugin install ontologian@ontologian-marketplace
 ```
 
 Installs commands and the consulting agent from the marketplace.
@@ -31,7 +31,7 @@ Installs commands and the consulting agent from the marketplace.
 ### Update
 
 ```
-/plugin update ontologian@ontologian
+/plugin update ontologian@ontologian-marketplace
 ```
 
 ---

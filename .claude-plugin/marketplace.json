@@ -5,13 +5,13 @@
   },
   "metadata": {
     "description": "Ontologian plugin for Claude Code",
-    "version": "1.1.0"
+    "version": "1.2.0"
   },
   "plugins": [
     {
       "name": "ontologian",
       "description": "Palantir ontology concepts (Object Type, Link Type, Action Type) for knowledge management in Claude Code",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "source": {
         "source": "url",
         "url": "https://github.com/swszz/ontologian.git"

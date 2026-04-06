@@ -2,26 +2,19 @@
 set -e
 
 SETTINGS_FILE="$HOME/.claude/settings.json"
-MARKETPLACE_KEY="ontologian"
-REPO="swszz/ontologian"
 
-echo "Setting up Ontologian..."
-
-mkdir -p "$(dirname "$SETTINGS_FILE")"
-
-NEW_ENTRY=$(cat <<EOF
-{
+NEW_ENTRY='{
   "extraKnownMarketplaces": {
-    "$MARKETPLACE_KEY": {
+    "ontologian": {
       "source": {
         "source": "github",
-        "repo": "$REPO"
+        "repo": "swszz/ontologian"
       }
     }
   }
-}
-EOF
-)
+}'
+
+mkdir -p "$(dirname "$SETTINGS_FILE")"
 
 if [ -f "$SETTINGS_FILE" ] && [ -s "$SETTINGS_FILE" ]; then
   if command -v jq &>/dev/null; then
@@ -46,21 +39,15 @@ with open(path, 'w') as f:
     json.dump(settings, f, indent=2)
 PYEOF
   else
-    echo "Error: jq or python3 is required. Please install one and retry."
+    echo "Error: jq or python3 is required."
     exit 1
   fi
 else
   echo "$NEW_ENTRY" > "$SETTINGS_FILE"
-  if command -v jq &>/dev/null; then
-    tmp=$(mktemp)
-    jq '.' "$SETTINGS_FILE" > "$tmp" && mv "$tmp" "$SETTINGS_FILE"
-  fi
 fi
 
 echo ""
-echo "Done! settings.json updated: $SETTINGS_FILE"
-echo ""
-echo "Next step — run this in Claude Code:"
+echo "Done. Run this in Claude Code:"
 echo ""
 echo "  /plugin install ontologian@ontologian"
 echo ""

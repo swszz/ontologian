@@ -502,10 +502,12 @@ Industry: <industry>
 
 **Step 22: Global sync check**
 
-Apply `_common.md` Global Sync subroutine:
-- `global_sync: ask` → "Sync to global store (<global_path>) as well? (y/n)"
-- `global_sync: auto` → proceed immediately
-- `global_sync: off` → skip
+Read `global_sync` from `.ontology/config.yaml`:
+- `ask` → "Sync to global store (`<global_path>`) as well? (y/n)" — y=proceed, n=skip
+- `auto` → proceed immediately
+- `off` → skip
+
+Action: Write-copy all modified domain files + `_index.yaml` to `<global_path>/domains/`.
 
 **Step 23: Completion message**
 

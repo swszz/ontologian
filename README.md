@@ -14,23 +14,9 @@ Ontologian brings Object Types, Link Types, and Action Types into your Claude Co
 curl -fsSL https://raw.githubusercontent.com/swszz/ontologian/main/setup.sh | bash
 ```
 
-This adds Ontologian's GitHub repo as a known marketplace source in `~/.claude/settings.json`.
+Adds Ontologian's GitHub repo as a known marketplace source in `~/.claude/settings.json`.
 
-**Requires:** `jq` and `python3`. If either is not installed, merge the settings manually instead:
-
-```json
-{
-  "mcpServers": {},
-  "pluginMarketplaces": [
-    {
-      "name": "ontologian",
-      "url": "https://raw.githubusercontent.com/swszz/ontologian/main"
-    }
-  ]
-}
-```
-
-Add this to `~/.claude/settings.json` (merge with existing content if the file already exists).
+**Requires:** `jq` or `python3`.
 
 ### Step 2 — Install the plugin
 
@@ -39,6 +25,8 @@ Run inside Claude Code:
 ```
 /plugin install ontologian@ontologian
 ```
+
+Installs commands and the consulting agent from the marketplace.
 
 ### Update
 
@@ -61,7 +49,6 @@ Run inside Claude Code:
 | `/ontologian:sync` | Sync local `.ontology/` to the global store |
 | `/ontologian:migrate` | Split a domain's single file into per-type files |
 | `/ontologian:visualize` | Render an ASCII relationship diagram |
-| `/ontologian:review` | Run 3-round Palantir Engineering Head Council review of the plugin itself |
 
 ### Consulting Agent
 
@@ -100,6 +87,31 @@ The consulting session covers 6 phases:
 /ontologian:visualize
 /ontologian:sync
 ```
+
+---
+
+## Plugin Structure
+
+```
+ontologian/
+├── commands/                    # Slash commands — installed as /ontologian[:<name>]
+│   ├── ontologian.md            # /ontologian
+│   ├── ontologian:add.md        # /ontologian:add
+│   ├── ontologian:analyze.md
+│   ├── ontologian:consult.md
+│   ├── ontologian:migrate.md
+│   ├── ontologian:search.md
+│   ├── ontologian:sync.md
+│   ├── ontologian:validate.md
+│   └── ontologian:visualize.md
+├── agents/
+│   └── ontology-consultant.md   # Proactive consulting agent
+├── hooks/
+│   └── hooks.json
+└── setup.sh                     # Marketplace registration script
+```
+
+`commands/` is the single source of truth. Edit files there directly.
 
 ---
 

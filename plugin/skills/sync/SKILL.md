@@ -76,7 +76,9 @@ Proceed? (y/n)
 
 `N` is the number of domain files + 1 (for `_index.yaml`).
 
-Wait for user input.
+If `--yes` was provided as an argument, skip the confirmation prompt and proceed directly to Step 5.
+
+Otherwise, wait for user input:
 
 - **`n`** → output and exit:
   ```

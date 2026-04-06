@@ -50,6 +50,14 @@ Run `/ontologian-add` to add a domain.
 
 Then skip to Step 5 (command list).
 
+If a domain name was provided as an argument (e.g. `/ontologian ecommerce`):
+- Store it as `domain_filter`.
+- In Step 4, process only the domain whose `name` matches `domain_filter`.
+- If not found in the `domains` array, output the following and exit:
+  ```
+  Domain '<name>' not found. Registered domains: <comma-separated list>
+  ```
+
 ### Step 4: Read each domain's ontology files
 
 Iterate over the `domains` array in `_index.yaml` and aggregate type counts per domain.

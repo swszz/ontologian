@@ -18,6 +18,16 @@ Output a pass message when no errors are found, or a detailed list of errors by 
 
 Glob `.ontology/domains/_index.yaml` → if missing, output `"Ontology is not initialized."` and **exit immediately**.
 
+### Step 1-B: Parse arguments
+
+If arguments were provided, parse them to set an optional domain filter:
+
+- If a domain name is provided (e.g. `/ontologian-validate ecommerce`), store it as `domain_filter`.
+- In Steps 3–6, skip any domain whose `name` does not match `domain_filter`.
+- If no arguments are provided, validate all domains (no filter applied).
+
+---
+
 ### Step 2: Read `_index.yaml`
 
 Use the Read tool to read `.ontology/domains/_index.yaml`.

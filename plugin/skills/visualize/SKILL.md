@@ -32,7 +32,15 @@ Output and exit.
 
 ### Step 3: Select a domain
 
-Branch based on the number of items in the `domains` array.
+**If a domain name was provided as an argument** (e.g. `/ontologian-visualize ecommerce`):
+- Look it up in the `domains` array.
+- If found, select it directly and proceed to Step 4. Do not prompt the user.
+- If not found, output an error and exit:
+  ```
+  Domain '<name>' not found. Available domains: <comma-separated list>
+  ```
+
+Otherwise, branch based on the number of items in the `domains` array.
 
 **If there is exactly 1 domain:** Select it automatically and proceed to Step 4. Do not prompt the user.
 

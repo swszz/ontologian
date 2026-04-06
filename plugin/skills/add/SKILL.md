@@ -22,6 +22,24 @@ Glob `.ontology/config.yaml`:
   - `.ontology/domains/_index.yaml`: `domains: []`
 - **If present**: Read it and store `global_sync`, `global_path` (defaults: `ask`, `~/.ontologian`)
 
+### Step 1-B: Parse arguments
+
+If arguments were provided with the command, parse them as natural language intent to pre-fill the interactive flow. Store extracted values in a `prefilled` object in memory.
+
+- **Domain name**: Extract if a domain name is mentioned (e.g. "ecommerce 도메인에", "in the ecommerce domain", "ecommerce domain"). Store as `prefilled.domain_name`.
+- **Type**: Extract if the entity type is mentioned:
+  - "오브젝트" / "object" / "object type" → `object`
+  - "링크" / "link" / "link type" → `link`
+  - "액션" / "action" / "action type" → `action`
+  Store as `prefilled.type`.
+- **Name**: Extract a PascalCase name for objects (e.g. "User", "Order"), snake_case for actions (e.g. "send_welcome_email"), or lowercase for links (e.g. "places"). Store as `prefilled.name`.
+- **Description**: Extract if a description phrase is present. Store as `prefilled.description`.
+- **Properties**: Extract if a property list is mentioned (e.g. "필드: user_id(PK, string), name(string), email(string)" or "fields: id, name, email"). Parse name, type, and primary flag. Store as `prefilled.properties[]`.
+
+In each subsequent step, if a `prefilled` value exists for a field, skip the corresponding prompt and use the pre-filled value directly. If a value cannot be confidently extracted, fall through to the normal interactive prompt for that field.
+
+---
+
 ### Step 2: Read _index.yaml
 
 Use the Read tool to load the domain list:

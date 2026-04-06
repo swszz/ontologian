@@ -31,7 +31,7 @@ Installs commands and the consulting agent from the marketplace.
 ### Update
 
 ```
-/plugin update ontologian
+/plugin update ontologian@ontologian
 ```
 
 ---

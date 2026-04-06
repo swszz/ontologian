@@ -98,6 +98,33 @@ version: 1
 
 If it already exists, skip.
 
+### Step 5b: Create global directory structure
+
+Before copying any files, ensure all required directories exist in two stages:
+
+**Stage 1 — Create the domains root:**
+```
+mkdir -p <global_path>/domains
+```
+If this fails (e.g. permission error), output the following and **exit immediately**:
+```
+✗ Sync failed: cannot create directory <global_path>/domains
+  Check write permissions on <global_path> and retry.
+```
+
+**Stage 2 — Create per-domain directories:**
+For each domain name in the `domains` array of `_index.yaml`:
+```
+mkdir -p <global_path>/domains/<domain_name>
+```
+If any per-domain mkdir fails, output and **exit immediately**:
+```
+✗ Sync failed: cannot create directory <global_path>/domains/<domain_name>
+  All directories must be confirmed before writing files.
+```
+
+Only proceed to Step 6 after all directories are confirmed.
+
 ### Step 6: Copy domain files
 
 Iterate over the `sync_files` array and copy each file.

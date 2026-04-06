@@ -102,6 +102,69 @@ Action: Write-copy the modified domain file(s) + _index.yaml to <global_path>/do
 
 ---
 
+## Status Prefix Convention
+
+All ontologian skills must use these status prefixes consistently. Do not invent new prefixes.
+
+| Prefix | Meaning | When to use |
+|--------|---------|-------------|
+| `[✓]` | Success / Completed | Operation succeeded, item validated, step done |
+| `[→]` | In progress / Pending | Operation starting, step in process |
+| `[!]` | Warning / Advisory | Non-blocking issue, recommendation, SUGGESTION-level finding |
+| `[i]` | Informational | Context, tip, progressive disclosure hint |
+| `[✗]` | Error / Failure | Blocking issue, validation error, operation failed |
+| `⚠` | Warning (inline) | Used in validate output for warnings (non-error findings) |
+
+**Output Format Convention — per-skill mapping:**
+
+Each skill must use its designated output format. Do not mix formats within a skill.
+
+| Skill | Format Type | Characters/Style |
+|-------|-------------|-----------------|
+| `ontologian` | Unicode box table | ═, ─, │, ┌, ┐, └, ┘, ├, ┤ — 80-char width |
+| `add` | Conversational prompts | Plain text + status prefixes |
+| `analyze` | Conversational prompts | Plain text + status prefixes |
+| `validate` | Indented error blocks | Status prefixes + 2-space indented `→` lines |
+| `visualize` | ASCII diagram | Box chars for the diagram; plain text for labels |
+| `search` | Plain list | Status prefixes + plain bullets |
+| `migrate` | Structured preview | Plain bullets (•) for file lists |
+| `sync` | Status log | Status prefixes only |
+| `review` | Section headers + status | ════ dividers + status prefixes |
+
+Add to each skill's Common Mistakes: `"Output format must follow the Output Format Convention in _common.md — see the per-skill mapping table for this skill's required format."`
+
+---
+
+## Cross-Domain Coupling
+
+Palantir ontologies enforce strict domain isolation. Cross-domain Link Types are a hard violation.
+
+**The correct pattern for cross-domain references:**
+
+When Object A in domain X needs to reference Object B in domain Y, store a reference property on A:
+```yaml
+# In domain X — ecommerce
+- name: Product
+  properties:
+    - name: supplier_id      # references Supplier in domain Y (inventory)
+      type: string
+      description: "Foreign reference to Supplier.supplier_id in the inventory domain"
+```
+
+**Why cross-domain Link Types are prohibited:**
+- A Link Type requires both `from` and `to` to exist in the same domain's object_types list.
+- Cross-domain links create tight coupling that breaks when either domain changes its schema independently.
+- Palantir Foundry's Object Link Service enforces domain isolation at the storage layer.
+
+**How to document an implicit foreign key:**
+1. Name the property `<entity>_id` or `<entity>_ref` (makes it discoverable by `/ontologian`).
+2. Include in the description: `"Foreign reference to <ObjectType>.<property> in the <domain> domain"`.
+3. The `/ontologian` overview will surface it as a cross-domain reference candidate.
+
+Add to each skill's Common Mistakes: `"Never create Link Types whose from/to cross domain boundaries — use reference properties instead (see Cross-Domain Coupling in _common.md)."`
+
+---
+
 ## Common Rules
 
 Rules that apply to all skills — deduplicated from individual skill Common Mistakes sections.

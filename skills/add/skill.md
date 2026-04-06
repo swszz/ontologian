@@ -56,13 +56,26 @@ No domains registered. Enter a name for the new domain:
 Wait for user input.
 
 - **Number selection** (existing domain): Store that domain's `name` and `path`/`paths` fields in memory. Proceed to Step 4.
-- **"N" or new domain text**: Prompt for a domain name (lowercase letters, hyphens, and underscores allowed), then:
+- **"N" or new domain text**: Prompt for a domain name (lowercase letters, hyphens, and underscores allowed), then ask the following questions **one at a time**:
 
   ```
   Enter a description for the domain (optional, press Enter to skip):
   ```
 
-  Store as `new_domain = { name, description }`. Proceed to Step 4.
+  ```
+  Enter the team or owner responsible for this domain (e.g. platform-team, data-eng):
+  ```
+  (Required — re-prompt if empty)
+
+  ```
+  Select stability level:
+    1. experimental — new or unstable domain, subject to change
+    2. stable       — production-ready, changes require review
+    3. deprecated   — being phased out, do not add new types
+  Enter a number (default 1 — experimental):
+  ```
+
+  Store as `new_domain = { name, description, domain_owner, stability, semantic_version: "1.0.0" }`. Proceed to Step 4.
 
 ### Step 4: Select a type
 
@@ -72,9 +85,43 @@ What type would you like to add?
   1. Object Type  — A business entity (e.g. User, Product)
   2. Link Type    — A relationship between entities (e.g. places, contains)
   3. Action Type  — A triggerable operation (e.g. send_welcome_email)
+  ?  Explain the differences
 
-Enter a number:
+Enter a number (or ?):
 ```
+
+If the user enters `?`, output the following explanation and redisplay the menu:
+
+```
+── Palantir Ontology Type Guide ──────────────────────────────
+Object Type  A real-world entity that can be uniquely identified.
+             Examples: User, Order, Product, Shipment, Invoice
+             Rule: You must be able to point to a concrete instance
+             in the physical or operational world.
+
+Link Type    A directional relationship between two Object Types.
+             Named as an active-voice verb (e.g. places, contains).
+             Examples: User places Order, Order contains Product
+             Rule: Name must be a verb — not a noun, not passive voice.
+
+Action Type  An operation triggered automatically or manually.
+             Responds to Object lifecycle events or runs on demand.
+             Examples: send_welcome_email (on User created),
+                       update_inventory (on Order status changes)
+             Rule: target is the Object whose state changes.
+──────────────────────────────────────────────────────────────
+
+What type would you like to add?
+
+  1. Object Type  — A business entity (e.g. User, Product)
+  2. Link Type    — A relationship between entities (e.g. places, contains)
+  3. Action Type  — A triggerable operation (e.g. send_welcome_email)
+  ?  Explain the differences
+
+Enter a number (or ?):
+```
+
+Repeat until a valid number (1, 2, or 3) is entered.
 
 Store the selection (`object` / `link` / `action`) in memory and proceed to the corresponding step.
 
@@ -102,7 +149,22 @@ Ask the following questions **one at a time** in order.
    Enter a property name (press Enter when done):
    ```
 
-   When a name is entered, ask in order:
+   When a name is entered, apply temporal type inference before showing the type menu:
+
+   - If the property name ends with `_at`, `_date`, `_time`, or `_on` → output:
+     ```
+     [i] Suggested type: datetime or date (name pattern suggests a timestamp)
+     ```
+   - If the property name starts with `is_`, `has_`, `can_`, or `was_` → output:
+     ```
+     [i] Suggested type: boolean (name pattern suggests a true/false flag)
+     ```
+   - If the property name ends with `_count`, `_qty`, `_quantity`, `_amount`, `_total`, `_price`, `_cost`, or `_fee` → output:
+     ```
+     [i] Suggested type: int or float (name pattern suggests a numeric value)
+     ```
+
+   These are advisory only — the user selects the final type from the menu below.
 
    ```
    Select a type:
@@ -253,7 +315,14 @@ Ask the following questions **one at a time** in order.
    ```
    Value after the change (to, e.g. approved, press Enter to skip):
    ```
-   If any of field, from, or to is provided, store as `trigger_condition: {field, from, to}`.
+
+   **trigger_condition guard:** If the user provided `from` or `to` but left `field` empty, re-prompt once:
+   ```
+   A trigger_condition requires a field name. Which field change should trigger this action? (press Enter to discard):
+   ```
+   If `field` is still empty after the second attempt, discard `trigger_condition` entirely — do not write a `trigger_condition` block with only `from`/`to` and no `field`.
+
+   If `field` is provided (with or without `from`/`to`), store as `trigger_condition: {field, from, to}` (omit `from`/`to` keys if not set).
 
 5. **Collect parameters** (repeat the following prompt):
 
@@ -391,6 +460,30 @@ link_types: []
 action_types: []
 ```
 
+**Update _index.yaml**: Read the current `_index.yaml`, then use the Edit tool to append the new domain entry using the canonical format below. This is the only template — do not add a second version.
+
+```yaml
+  - name: <domain_name>
+    description: "<domain_description>"
+    domain_owner: "<domain_owner>"
+    stability: <stability>
+    semantic_version: "1.0.0"
+    path: <domain_name>/ontology.yaml
+    last_modified: <today_date>   # YYYY-MM-DD
+```
+
+If `domains: []`, replace with:
+```yaml
+domains:
+  - name: <domain_name>
+    description: "<domain_description>"
+    domain_owner: "<domain_owner>"
+    stability: <stability>
+    semantic_version: "1.0.0"
+    path: <domain_name>/ontology.yaml
+    last_modified: <today_date>
+```
+
 Include `new_entry` immediately in the appropriate type array. For example, if adding an Object Type:
 
 ```yaml
@@ -404,24 +497,7 @@ link_types: []
 action_types: []
 ```
 
-**Update _index.yaml**: Read the current `_index.yaml`, then use the Edit tool to append a new entry to `domains: []` or to the end of the existing array.
-
-Entry format:
-```yaml
-  - name: <domain_name>
-    description: "<domain_description>"
-    path: <domain_name>/ontology.yaml
-    last_modified: <today_date>   # YYYY-MM-DD
-```
-
-If `domains: []`, replace with:
-```yaml
-domains:
-  - name: <domain_name>
-    description: "<domain_description>"
-    path: <domain_name>/ontology.yaml
-    last_modified: <today_date>
-```
+Use the canonical `_index.yaml` template defined above in the "Update _index.yaml" section — do not duplicate the template here.
 
 #### 7-B: Existing domain — pre-migration (`path` field present)
 
@@ -482,6 +558,7 @@ Update the domain's `last_modified` in `_index.yaml` (Edit tool).
 
 ```
 ✓ [<domain_name>] Added <entry_name> (<type_label>) → .ontology/domains/<domain_name>/ontology.yaml
+[i] Tip: Run /ontologian:validate to check for schema issues, or /ontologian:visualize to see your domain's relationships.
 ```
 
 `<type_label>` mapping:

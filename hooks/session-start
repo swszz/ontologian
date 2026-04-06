@@ -16,7 +16,7 @@ escape_for_json() {
     printf '%s' "$s"
 }
 
-context="ontologian plugin is active. Use these slash commands to manage your ontology:\\n- /ontologian — 도메인 목록 및 상태 요약\\n- /ontologian:add — 새 타입 추가\\n- /ontologian:analyze — 요구사항 분석 → 온톨로지 도출\\n- /ontologian:search — 키워드 검색\\n- /ontologian:validate — 무결성 검증\\n- /ontologian:sync — 글로벌 싱크\\n- /ontologian:migrate — 타입별 파일 분리\\n- /ontologian:visualize — 관계 다이어그램 출력\\n- /ontologian:consult — 팔란티어급 온톨로지 설계 컨설팅 (비즈니스 요구사항 → 프로덕션 온톨로지)"
+context="ontologian plugin is active. Use these slash commands to manage your ontology:\\n- /ontologian — Show domain list and status summary\\n- /ontologian:add — Add a new type interactively\\n- /ontologian:analyze — Derive ontology from free-form requirements\\n- /ontologian:search — Search by keyword across all domains\\n- /ontologian:validate — Check YAML schema and referential integrity\\n- /ontologian:sync — Sync to global store\\n- /ontologian:migrate — Split domain file into per-type files\\n- /ontologian:visualize — Render ASCII relationship diagram\\n- /ontologian:consult — Start a Palantir-grade ontology consulting session\\n- /ontologian:review — Run 3-round Engineering Head Council review"
 
 if [ -n "${CURSOR_PLUGIN_ROOT:-}" ]; then
   printf '{\n  "additional_context": "%s"\n}\n' "$context"

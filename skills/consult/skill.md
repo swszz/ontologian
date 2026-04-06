@@ -17,6 +17,23 @@ so users don't need to know this command exists to benefit from it.
 
 ---
 
+## Consulting Workflow Overview
+
+The consulting session runs in 6 sequential phases. Each phase has a defined scope, outputs specific files, and asks targeted questions before proceeding.
+
+| Phase | Name | What the agent asks | Files produced | Session context |
+|-------|------|---------------------|----------------|-----------------|
+| **Phase 0** | Scope | Domain scope confirmation; start from existing requirements or blank slate? | None | Sets `initial_context` and `scope` for all downstream phases |
+| **Phase 1** | Discovery | 5-axis structured interview: entities, relationships, processes, boundaries, governance | None (stored in memory) | Raw domain facts collected |
+| **Phase 2** | Modeling | Autonomous — derives Object, Link, Action type candidates using `/ontologian:analyze` rules | None (internal draft) | Candidate types derived from Discovery output |
+| **Phase 3** | Design | Reviews candidates against Palantir enrichment patterns: object enrichment, state machine audit, semantic naming, governance metadata | None (internal refinement) | Palantir-grade patterns applied |
+| **Phase 4** | Construction | Writes all domain files in dependency order; runs `/ontologian:validate` automatically | `.ontology/domains/<domain>/ontology.yaml`, `.ontology/domains/_index.yaml` | Files written; validation errors resolved before proceeding |
+| **Phase 5** | Delivery | Renders ASCII relationship diagrams; generates final report | `.ontology/CONSULT_REPORT.md` | Session complete |
+
+Full agent specification: `agents/ontology-consultant.md`
+
+---
+
 ## Steps
 
 ### Step 1: Capture initial context

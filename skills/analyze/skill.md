@@ -426,7 +426,13 @@ Output the confirmed candidates (`confidence: high`) and prompt for placement:
 Choose (A/B):
 ```
 
-**Option A — single domain**: Display existing domain list + "N. Create new domain". If no domains exist, prompt for a name directly. If creating a new domain, also prompt for a description (optional).
+**Option A — single domain**: Display existing domain list + "N. Create new domain". If no domains exist, prompt for a name directly. If creating a new domain, collect the following **one at a time**:
+1. Domain name (required)
+2. Description (optional, press Enter to skip)
+3. Team or owner responsible for this domain (required, e.g. platform-team) → stored as `domain_owner`
+4. Stability level: `1. experimental` / `2. stable` / `3. deprecated` (default: experimental) → stored as `stability`
+
+Store governance fields (`domain_owner`, `stability`, `semantic_version: "1.0.0"`) and write them to both the domain YAML header and the `_index.yaml` entry in Step 9-A.
 
 **Option B — distribute**: Specify a domain for each Object Type:
 ```
@@ -502,16 +508,27 @@ link_types:
 action_types:
   # confirmed Action Types ([] if none)
 ```
-Use Edit to add the new domain entry to `_index.yaml` (`path: <domain_name>/ontology.yaml`, `last_modified: today`).
+Use Edit to add the new domain entry to `_index.yaml` with governance metadata and `last_modified: today`:
+```yaml
+  - name: <domain_name>
+    description: "<domain_description>"
+    domain_owner: "<domain_owner>"
+    stability: <stability>
+    semantic_version: "1.0.0"
+    path: <domain_name>/ontology.yaml
+    last_modified: <today_date>   # YYYY-MM-DD
+```
 
 #### 9-B: Existing domain — `path` field present (pre-migration)
 
 Read `.ontology/domains/<path>` → loop through confirmed candidates and use Edit to append to each type array.
-If an array is `[]`, replace with proper array form before appending. Update `_index.yaml` `last_modified` to today.
+If an array is `[]`, replace with proper array form before appending.
+After all appends (including edge case where no new YAML is written due to all merges), always update the domain's `last_modified` in `_index.yaml` to today's date (YYYY-MM-DD) using the Edit tool.
 
 #### 9-C: Existing domain — `paths` field present (post-migration)
 
-Read each type file → loop through confirmed candidates and use Edit to append. Apply the same empty-array logic as 9-B. Update `_index.yaml` `last_modified`.
+Read each type file → loop through confirmed candidates and use Edit to append. Apply the same empty-array logic as 9-B.
+After all appends (including edge case where no new YAML is written), always update the domain's `last_modified` in `_index.yaml` to today's date (YYYY-MM-DD) using the Edit tool.
 
 ---
 
@@ -537,6 +554,8 @@ Read each type file → loop through confirmed candidates and use Edit to append
     Action Types  : N (...)
 
   → .ontology/domains/<domain_name>/ontology.yaml
+
+[i] Tip: Run /ontologian:validate to check for schema issues, or /ontologian:visualize to see your new types in context.
 ```
 
 **Edge case B (nothing added):**

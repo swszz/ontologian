@@ -170,6 +170,29 @@ version: <version>
 action_types: []
 ```
 
+### Step 6-D: Integrity check before index update
+
+Before modifying `_index.yaml`, verify all three split files were successfully written.
+
+Use Glob to check each of the three files:
+- `.ontology/domains/<target_dir>/object_types.yaml`
+- `.ontology/domains/<target_dir>/link_types.yaml`
+- `.ontology/domains/<target_dir>/action_types.yaml`
+
+If any file is missing, output the following and **exit immediately** (do NOT proceed to Step 7):
+```
+✗ Migration aborted — one or more split files were not written successfully.
+
+  Missing files:
+    • .ontology/domains/<target_dir>/<missing_file>  ← not found
+
+  The original .ontology/domains/<target_domain.path> has not been modified.
+  The _index.yaml has not been modified.
+  Run /ontologian:migrate again to retry from scratch.
+```
+
+Only proceed to Step 7 if all three files exist.
+
 ### Step 7: Update `_index.yaml`
 
 Re-read `.ontology/domains/_index.yaml` with the Read tool.
@@ -220,7 +243,9 @@ index_updated: .ontology/domains/_index.yaml
   path -> paths (object_types, link_types, action_types)
 ```
 
-### Step 9: Completion message
+### Step 9: Archive original file
+
+Prompt the user to delete the original `ontology.yaml`:
 
 ```
 ✓ [<domain_name>] Migration complete
@@ -233,9 +258,19 @@ Files created:
 _index.yaml updated (path → paths)
 Log: .ontology/migrations/<log_filename>
 
-Delete the original file manually when ready:
-  rm .ontology/domains/<target_domain.path>
+The original file still exists:
+  .ontology/domains/<target_domain.path>
+
+Delete it now? (y/n — recommended: y)
 ```
+
+- `y` → Use Bash to run: `rm ".ontology/domains/<target_domain.path>"`
+  Then output: `[✓] Original file deleted.`
+- `n` → Output:
+  ```
+  [i] Original file kept. Run /ontologian:validate to detect stale files.
+      Delete manually when ready: rm .ontology/domains/<target_domain.path>
+  ```
 
 ### Step 10: Global sync check
 

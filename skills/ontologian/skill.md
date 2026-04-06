@@ -27,6 +27,7 @@ Available commands:
   /ontologian:sync      — Sync to global store
   /ontologian:migrate   — Split domain file into per-type files
   /ontologian:visualize — Render relationship diagram
+  /ontologian:review    — Run 3-round Engineering Head Council review
 ```
 
 ### Step 2: Read config.yaml
@@ -99,7 +100,22 @@ Available commands:
   /ontologian:sync      — Sync to global store
   /ontologian:migrate   — Split domain file into per-type files
   /ontologian:visualize — Render relationship diagram
+  /ontologian:review    — Run 3-round Engineering Head Council review
 ```
+
+After the domains table and totals line, scan all properties across all domains:
+
+For each property where the name matches `.*_id$` or `.*_ref$` (case-insensitive), output one line per match:
+```
+Possible cross-domain reference: <domain>.<ObjectType>.<property_name>
+```
+
+If any such properties are found, precede the list with:
+```
+[i] Cross-domain reference candidates (properties ending in _id or _ref):
+```
+
+If none are found, omit this section entirely.
 
 **Table rendering rules:**
 

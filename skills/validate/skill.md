@@ -68,6 +68,19 @@ For each item:
 | `name` | Required. Error if absent. |
 | `description` | Required. Error if absent or empty string. |
 
+**Implementation-artifact name check:**
+
+After validating `name` is present, check if the name ends with any of these suffixes (case-insensitive):
+`DTO`, `Entity`, `Repository`, `Manager`, `Service`, `Handler`, `Base`, `Abstract`, `Util`, `Helper`, `Factory`, `Controller`
+
+If matched, add a MAJOR warning:
+```
+⚠ [<domain_name>] Object Type '<name>'
+  → name: '<name>' contains an implementation artifact suffix ('<suffix>').
+    Object Type names must represent real-world entities, not code constructs.
+    Rename to the entity it represents (e.g. OrderDTO → Order, UserManager → remove).
+```
+
 If a `properties` array exists, validate each property:
 
 | Field | Rule |
@@ -76,6 +89,37 @@ If a `properties` array exists, validate each property:
 | `type` | Required. Allowed values: `string`, `int`, `float`, `boolean`, `date`, `datetime`. `integer` is accepted as an alias for `int` (not an error). |
 | `description` | Optional. If absent, emit a warning (not an error): `[ObjectType.property] No description. Adding one helps preserve field intent.` |
 | `computed` | Optional. If `true`, check for `expression`. If absent, emit a warning: `Computed property '<name>' has no expression.` |
+
+**Property type heuristic checks (add as MAJOR warnings):**
+
+After validating required fields, apply these name-pattern checks:
+
+| Property name pattern | Expected type | Warning if type is |
+|----------------------|---------------|--------------------|
+| ends with `_at`, `_date`, `_time`, `_on` | `date` or `datetime` | `string`, `int`, `float`, `boolean` |
+| starts with `is_`, `has_`, `can_`, `was_` | `boolean` | `string`, `int`, `float` |
+| ends with `_count`, `_qty`, `_quantity`, `_amount`, `_total`, `_price`, `_cost`, `_fee` | `int` or `float` | `string`, `boolean` |
+
+Warning format:
+```
+⚠ [<domain_name>] Object Type '<name>' > property '<prop_name>'
+  → type: '<prop_name>' suggests <expected_type> but is declared as '<actual_type>'.
+    Change to <expected_type> if this field holds a real <date/boolean/numeric> value.
+```
+
+**Enum documentation check (status-pattern fields — add as MAJOR warnings):**
+
+For each property where:
+- `type` is `string` AND
+- `name` exactly matches any of: `status`, `state`, `type`, `kind`, `mode`, `stage`, `phase`, `category`, `level`
+  OR `name` ends with `_status`, `_state`, `_type` (case-insensitive, e.g. `order_status`, `account_type`)
+
+Check if `description` contains the substring `"Allowed values:"`. If not, add a MAJOR warning:
+```
+⚠ [<domain_name>] Object Type '<name>' > property '<prop_name>'
+  → description: status-pattern field missing allowed values documentation.
+    Add 'Allowed values: X, Y, Z' to the description (e.g. "Allowed values: pending, active, cancelled").
+```
 
 #### Link Type validation
 
@@ -88,6 +132,27 @@ For each item:
 | `to` | Required |
 | `cardinality` | Required. Allowed values: `one_to_one`, `one_to_many`, `many_to_many`, `many_to_one` |
 
+**Link Type missing `description` (SUGGESTION):**
+
+If a Link Type has no `description` field (absent or empty string), add a SUGGESTION warning:
+```
+⚠ [<domain_name>] Link Type '<name>'
+  → description: not set. Adding a description clarifies the relationship's intent and directionality.
+    Example: "A User places an Order" or "An Order contains one or more Products"
+```
+
+**`many_to_many` cardinality advisory (SUGGESTION):**
+
+If `cardinality` is `many_to_many`, add a SUGGESTION warning:
+```
+⚠ [<domain_name>] Link Type '<name>' (<from> → <to>)
+  → cardinality: many_to_many links often indicate a missing intermediate Object Type.
+    If the relationship has its own attributes (e.g. created_at, status) or instances need
+    to be queried independently, consider introducing an intermediate Object Type.
+    Example: User --[enrolls]--> Course → User --[initiates]--> Enrollment --[covers]--> Course
+    If this is a simple tag/classification relationship with no relationship-level attributes, many_to_many is acceptable.
+```
+
 #### Action Type validation
 
 For each item:
@@ -99,6 +164,26 @@ For each item:
 | `trigger` | Required. Allowed values: `object_created`, `object_updated`, `object_deleted`, `manual` |
 | `target` | Required |
 
+**`manual` trigger with no parameters (MAJOR warning):**
+
+If `trigger` is `manual` and `parameters` is absent or an empty array, add a MAJOR warning:
+```
+⚠ [<domain_name>] Action Type '<name>'
+  → trigger: manual actions should declare at least one parameter to document required inputs.
+    If this action truly takes no inputs, add parameters: [] explicitly with a comment in description.
+    Example parameters: approval_reason (string), override_flag (boolean)
+```
+
+**`object_updated` without `trigger_condition` check:**
+
+If `trigger` is `object_updated` and no `trigger_condition` block is present, add a MAJOR warning:
+```
+⚠ [<domain_name>] Action Type '<name>'
+  → trigger: object_updated without trigger_condition fires on every property change.
+    Add a trigger_condition.field to specify which field change should trigger this action.
+    If all-property firing is intentional (e.g. audit logging), add trigger_condition: { field: "*" } to document intent.
+```
+
 **`trigger_condition` validation (optional field):**
 
 If `trigger_condition` exists:
@@ -107,11 +192,13 @@ If `trigger_condition` exists:
   [<domain_name>] Action Type '<name>'
     → trigger_condition: not allowed when trigger is '<trigger_value>'. Only valid with object_updated.
   ```
-- Required sub-fields: `field`, `from`, and `to` must all be present. If any is missing, add an error:
+- `field` is required. If absent, add an error:
   ```
   [<domain_name>] Action Type '<name>'
-    → trigger_condition.<field_name>: required field missing. (field, from, to are all required)
+    → trigger_condition.field: required field missing.
   ```
+- `from` and `to` are optional. Having only `field` is valid — it means "fire on any change to this field".
+  If `from` is provided but `field` is absent, the error above covers it. Never require `from`/`to`.
 
 If a `parameters` array exists, validate each parameter:
 
@@ -194,6 +281,60 @@ If not found, add an error:
   → trigger_condition.field: '<field_value>' does not exist as a property of target '<target_name>'.
 ```
 
+### Step 5b: Governance metadata validation
+
+For each domain entry in `_index.yaml`, check for governance metadata:
+
+| Field | Severity if missing | Warning text |
+|-------|--------------------|--------------------------------------------|
+| `domain_owner` | MAJOR | `Domain '<name>' has no domain_owner. Add domain_owner: <team-name> to the _index.yaml entry.` |
+| `stability` | MAJOR | `Domain '<name>' has no stability. Add stability: stable\|experimental\|deprecated to the _index.yaml entry.` |
+| `semantic_version` | MINOR | `Domain '<name>' has no semantic_version. Add semantic_version: 1.0.0 to the _index.yaml entry.` |
+
+Allowed values for `stability`: `stable`, `experimental`, `deprecated`. If set to another value, add an error:
+```
+[<domain_name>] _index.yaml
+  → stability: invalid value '<value>'. Allowed: stable, experimental, deprecated.
+```
+
+Emit all governance metadata issues as warnings (⚠), not errors. Include them in the warnings list.
+
+### Step 5a: Stale-file check after migration
+
+For each domain entry in `_index.yaml` that uses a `paths` field (post-migration domain):
+- Derive the expected legacy path: replace the `paths.object_types` value's filename with `ontology.yaml`.
+  Example: `paths.object_types = ecommerce/object_types.yaml` → legacy path = `ecommerce/ontology.yaml`
+- Use Glob to check if `.ontology/domains/<legacy_path>` exists.
+- If it does, add a MINOR warning:
+  ```
+  ⚠ [<domain_name>] Stale pre-migration file detected:
+    .ontology/domains/<legacy_path>
+    This file is no longer used (domain is now reading from paths.*).
+    Delete it to prevent confusion:
+      rm .ontology/domains/<legacy_path>
+    Or run /ontologian:migrate and choose to delete it interactively.
+  ```
+
+### Step 5-C: Circular trigger detection
+
+After collecting all action types across all domains, perform a single-hop circular trigger check:
+
+Build a list of all `object_created` actions: `{ domain, action_name, target }`.
+
+For each pair of `object_created` actions (A, B) in the **same domain** where A ≠ B:
+- If `A.target == B.target`, these two actions both fire when the same Object Type is created.
+- This is a potential infinite loop if either action creates another instance of the same type as its side effect.
+- Add a MAJOR warning for each such pair:
+  ```
+  ⚠ [<domain_name>] Action Types '<A.action_name>' and '<B.action_name>'
+    → Both use trigger: object_created with the same target '<target>'.
+      If either action creates a new '<target>' instance, this will cause an infinite trigger loop.
+      Review each action's side effects to confirm no '<target>' instance is created as a result.
+      If intentional, document this explicitly in both actions' descriptions.
+  ```
+
+**Verification:** Two actions in the same domain both with `trigger: object_created` and `target: User` → both are flagged in the same warning.
+
 ### Step 6: Duplicate name validation
 
 Within each domain, check for duplicate names within each type category:
@@ -216,6 +357,7 @@ If duplicates found, add an error:
 
 ```
 ✓ All domains passed validation (<N> domains, <N> Objects, <N> Links, <N> Actions)
+[i] Tip: Run /ontologian:visualize to render relationship diagrams, or /ontologian:sync to push to the global store.
 ```
 
 **No errors but warnings exist:**

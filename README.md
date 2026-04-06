@@ -94,16 +94,17 @@ The consulting session covers 6 phases:
 
 ```
 ontologian/
-├── commands/                    # Slash commands — installed as /ontologian[:<name>]
+├── commands/
 │   ├── ontologian.md            # /ontologian
-│   ├── ontologian:add.md        # /ontologian:add
-│   ├── ontologian:analyze.md
-│   ├── ontologian:consult.md
-│   ├── ontologian:migrate.md
-│   ├── ontologian:search.md
-│   ├── ontologian:sync.md
-│   ├── ontologian:validate.md
-│   └── ontologian:visualize.md
+│   └── ontologian/              # /ontologian:<name>
+│       ├── add.md
+│       ├── analyze.md
+│       ├── consult.md
+│       ├── migrate.md
+│       ├── search.md
+│       ├── sync.md
+│       ├── validate.md
+│       └── visualize.md
 ├── agents/
 │   └── ontology-consultant.md   # Proactive consulting agent
 ├── hooks/

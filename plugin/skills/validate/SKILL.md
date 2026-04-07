@@ -45,9 +45,9 @@ Output and exit.
 Iterate over the `domains` array in `_index.yaml` and read each domain's type data.
 
 All domains use the `directory` format:
-- Glob `ontology/domains/<directory>/objects/*.yaml` → read each → collect into `object_types[]`
-- Glob `ontology/domains/<directory>/links/*.yaml` → read each → collect into `link_types[]`
-- Glob `ontology/domains/<directory>/actions/*.yaml` → read each → collect into `action_types[]`
+- Glob `ontology/domains/<directory>/objects/*.md` → read each → collect into `object_types[]`
+- Glob `ontology/domains/<directory>/links/*.md` → read each → collect into `link_types[]`
+- Glob `ontology/domains/<directory>/actions/*.md` → read each → collect into `action_types[]`
 Each file is a single entity definition with no wrapper key.
 
 If a domain file cannot be read, add the following to the error list and skip validation for that domain:
@@ -67,6 +67,21 @@ domain_data[domain_name] = {
   action_types: [...]    # empty array if absent
 }
 ```
+
+### Step 3-B: Markdown file parsing rule
+
+Each entity file is a `.md` file with YAML frontmatter. Parse only the frontmatter (content between the first and second `---` delimiters) as YAML.
+
+**Wiki link field extraction:** The `from`, `to`, and `target` fields may contain either a plain Object Type name or a full-path Obsidian wiki link:
+- Plain: `from: Shipment`
+- Wiki link: `from: "[[ontology/domains/logistics/objects/Shipment|Shipment]]"`
+
+When reading these fields, extract the Object Type name as follows:
+- If the value matches `[[<path>|<Name>]]` → use `<Name>` as the type name, `<path>` as the file path
+- If the value matches `[[<Name>]]` → use `<Name>` as both
+- If the value is a plain string → use it directly
+
+Store both the extracted name and the full wiki link string (if present) for use in validation steps.
 
 ### Step 4: Schema validation
 
@@ -256,27 +271,29 @@ If `required` is present with an invalid value, add an error:
   → required: invalid value '<value>'. Allowed: true, false. Omit this field when the parameter is required (true is the default).
 ```
 
-#### Cross-domain refs validation
+#### Cross-domain wiki link validation
 
-After validating all Link Types and Action Types, perform a cross-domain `refs` integrity check.
+After validating all Link Types and Action Types, perform a cross-domain wiki link integrity check.
 
-For each Link Type and Action Type that has a `refs` field:
+For each Link Type, check the `from` and `to` fields. For each Action Type, check the `target` field. Apply the following checks only when the field value is a wiki link (matched in Step 3-B); skip plain string values here (they are handled by referential integrity in Step 5).
 
-1. **Parse each ref entry.** Each entry must match the pattern:
+For each wiki link value found in `from`, `to`, or `target`:
+
+1. **Validate the link format.** The value must match:
    ```
    [[ontology/domains/<directory>/objects/<Name>|<Name>]]
    ```
-   If an entry does **not** match this pattern, add an error:
+   If it does **not** match this pattern, add an error:
    ```
    [<domain_name>] <Type Kind> '<name>'
-     → refs: entry '<value>' is not a valid full-path Obsidian link.
+     → <field>: '<value>' is not a valid full-path Obsidian wiki link.
        Expected format: [[ontology/domains/<directory>/objects/<Name>|<Name>]]
    ```
 
-2. **Check that the referenced file exists.** Glob `ontology/domains/<directory>/objects/<Name>.yaml`. If the file does not exist, add an error:
+2. **Check that the referenced file exists.** Glob `ontology/domains/<directory>/objects/<Name>.md`. If the file does not exist, add an error:
    ```
    [<domain_name>] <Type Kind> '<name>'
-     → refs: "[[ontology/domains/<directory>/objects/<Name>|<Name>]]" — file not found.
+     → <field>: "[[ontology/domains/<directory>/objects/<Name>|<Name>]]" — file not found.
        Verify the Object Type name and domain directory are correct.
    ```
 
@@ -285,7 +302,7 @@ For each Link Type and Action Type that has a `refs` field:
    - If the referenced domain's **name** is not present in `dependency_direction`, add an error:
      ```
      [<domain_name>] <Type Kind> '<name>'
-       → refs: cross-domain reference to '<ReferencedObjectType>' in domain '<referenced_domain>' is not declared.
+       → <field>: cross-domain reference to '<Name>' in domain '<referenced_domain>' is not declared.
          Add '<referenced_domain>' to dependency_direction in _index.yaml for domain '<domain_name>'.
      ```
 
@@ -299,13 +316,13 @@ For each Link Type and Action Type that has a `refs` field:
 **For `directory`-format domains, render entity names as file links in error messages:**
 
 ```
-[<domain_name>] [<TypeName>](ontology/domains/<directory>/<subdir>/<filename>.yaml): <error_message>
+[<domain_name>] [<TypeName>](ontology/domains/<directory>/<subdir>/<filename>.md): <error_message>
 ```
 
 Where:
-- Object Types → `objects/<Name>.yaml`
-- Link Types → `links/<name>.yaml`
-- Action Types → `actions/<name>.yaml`
+- Object Types → `objects/<Name>.md`
+- Link Types → `links/<name>.md`
+- Action Types → `actions/<name>.md`
 
 Examples:
 

@@ -136,19 +136,20 @@ When first created, the directory structure looks like this:
         ├── _index.yaml          # Domain registry
         └── <domain-name>/
             ├── objects/
-            │   └── <ObjectTypeName>.yaml
+            │   └── <ObjectTypeName>.md
             ├── links/
-            │   └── <link_name>.yaml
+            │   └── <link_name>.md
             └── actions/
-                └── <action_name>.yaml
+                └── <action_name>.md
 ```
 
 ### Domain file structure
 
 Each entity type lives in its own file. No wrapper keys — the file content IS the entity definition.
 
-**`objects/Product.yaml`**
-```yaml
+**`objects/Product.md`**
+```markdown
+---
 name: Product
 description: "A sellable item"
 properties:
@@ -161,19 +162,26 @@ properties:
   - name: status
     type: string
     description: "Allowed values: active, inactive, discontinued"
+---
 ```
 
-**`links/places.yaml`**
-```yaml
+**`links/places.md`**
+```markdown
+---
 name: places
 from: User
 to: Order
 cardinality: one_to_many
 description: "User places an order"
+---
+
+[[ontology/domains/ecommerce/objects/User|User]]
+[[ontology/domains/ecommerce/objects/Order|Order]]
 ```
 
-**`actions/send_welcome_email.yaml`**
-```yaml
+**`actions/send_welcome_email.md`**
+```markdown
+---
 name: send_welcome_email
 description: "Send welcome email to newly registered users"
 target: User
@@ -181,6 +189,9 @@ trigger: object_created
 parameters:
   - name: email_template
     type: string
+---
+
+[[ontology/domains/ecommerce/objects/User|User]]
 ```
 
 **`_index.yaml`** (domain registry)

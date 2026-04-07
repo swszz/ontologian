@@ -532,16 +532,16 @@ Proceed with adding the above? (y / n / edit)
 
 ---
 
-### Step 7: Update YAML
+### Step 7: Write entity file
 
 #### 7-A: New domain
 
-Create the per-entity YAML files and the domain subdirectory structure. Do **not** create a flat `ontology.yaml` for new domains.
+Create the per-entity Markdown files and the domain subdirectory structure. Do **not** create a flat `ontology.yaml` for new domains.
 
 **Write the entity file**: Use the Write tool to create the appropriate file based on type:
-- Object Type → `ontology/domains/<domain_name>/objects/<Name>.yaml`
-- Link Type → `ontology/domains/<domain_name>/links/<name>.yaml`
-- Action Type → `ontology/domains/<domain_name>/actions/<name>.yaml`
+- Object Type → `ontology/domains/<domain_name>/objects/<Name>.md`
+- Link Type → `ontology/domains/<domain_name>/links/<name>.md`
+- Action Type → `ontology/domains/<domain_name>/actions/<name>.md`
 
 Write the `new_entry` contents directly into that file (not wrapped in an array — a single YAML document).
 
@@ -583,27 +583,29 @@ Target directories:
 - Action Type: `ontology/domains/<directory>/actions/`
 
 **Object Type:**
-Check that `ontology/domains/<directory>/objects/<Name>.yaml` does not already exist.
+Check that `ontology/domains/<directory>/objects/<Name>.md` does not already exist.
 If it exists, warn:
 ```
 ⚠️ Object Type "<Name>" already exists at <path>. Overwrite? (y/n)
 ```
 If n → cancel. If y or file doesn't exist → Use the Write tool to create the file:
-```yaml
+```markdown
+---
 name: <Name>
 description: "<description>"
 properties:
   - name: <property_name>
     type: <type>
     ...
+---
 ```
 
 **Link Type:**
-Check that `ontology/domains/<directory>/links/<name>.yaml` does not already exist.
+Check that `ontology/domains/<directory>/links/<name>.md` does not already exist.
 If it exists → warn and ask to overwrite (same as Object Type).
 
 Before writing, resolve the domain directory for `from` and `to` Object Types:
-- Search `ontology/domains/_index.yaml` for all domains, then check each domain's `objects/` directory for a file matching `<ObjectType>.yaml`.
+- Search `ontology/domains/_index.yaml` for all domains, then check each domain's `objects/` directory for a file matching `<ObjectType>.md`.
 - If found in the **current domain** → path is `ontology/domains/<current_directory>/objects/<Name>`
 - If found in a **different domain** → path is `ontology/domains/<other_directory>/objects/<Name>`. Also check that the other domain's `name` appears in the current domain's `dependency_direction` list in `_index.yaml`. If it does not, emit an error before writing:
   ```
@@ -613,28 +615,28 @@ Before writing, resolve the domain directory for `from` and `to` Object Types:
 - If not found in any domain → use the current domain path as a best-effort fallback and emit a warning.
 
 Write:
-```yaml
+```markdown
+---
 name: <name>
-from: <ObjectType>
-to: <ObjectType>
+from: "[[ontology/domains/<from_directory>/objects/<FromType>|<FromType>]]"
+to: "[[ontology/domains/<to_directory>/objects/<ToType>|<ToType>]]"
 cardinality: <cardinality>
 description: "<description>"  # only if provided
-refs:
-  - "[[ontology/domains/<from_directory>/objects/<FromType>|<FromType>]]"
-  - "[[ontology/domains/<to_directory>/objects/<ToType>|<ToType>]]"
+---
 ```
 
 **Action Type:**
-Check that `ontology/domains/<directory>/actions/<name>.yaml` does not already exist.
+Check that `ontology/domains/<directory>/actions/<name>.md` does not already exist.
 If it exists → warn and ask to overwrite.
 
 Before writing, resolve the domain directory for the `target` Object Type using the same lookup logic as Link Type above. Apply the same cross-domain `dependency_direction` check and error if undeclared.
 
 Write:
-```yaml
+```markdown
+---
 name: <name>
 description: "<description>"
-target: <ObjectType>
+target: "[[ontology/domains/<target_directory>/objects/<TargetType>|<TargetType>]]"
 trigger: <trigger>
 trigger_condition:  # only when object_updated and field provided
   field: <field>
@@ -644,8 +646,7 @@ parameters:       # only when at least one parameter
   - name: <param>
     type: <type>
     required: false  # only when false; omit when true
-refs:
-  - "[[ontology/domains/<target_directory>/objects/<TargetType>|<TargetType>]]"
+---
 ```
 
 Update `last_modified` in `_index.yaml` to today's date after writing.
@@ -671,9 +672,9 @@ Update `last_modified` in `_index.yaml` to today's date after writing.
 ```
 
 Where `<file_path>` is the actual path of the file created:
-- Object Type: `ontology/domains/<directory>/objects/<Name>.yaml`
-- Link Type: `ontology/domains/<directory>/links/<name>.yaml`
-- Action Type: `ontology/domains/<directory>/actions/<name>.yaml`
+- Object Type: `ontology/domains/<directory>/objects/<Name>.md`
+- Link Type: `ontology/domains/<directory>/links/<name>.md`
+- Action Type: `ontology/domains/<directory>/actions/<name>.md`
 
 `<type_label>` mapping:
 - Object Type → `Object Type`

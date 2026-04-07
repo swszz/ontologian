@@ -137,7 +137,7 @@ Glob `ontology/config.yaml`:
 
 **Step 2: Load existing ontology state**
 
-Read `ontology/domains/_index.yaml`. For each domain, read its per-entity files: glob `objects/*.yaml`, `links/*.yaml`, `actions/*.yaml`.
+Read `ontology/domains/_index.yaml`. For each domain, read its per-entity files: glob `objects/*.md`, `links/*.md`, `actions/*.md`.
 Store as `existing_state: { domains: [{ name, object_count, link_count, action_count }] }`.
 
 If domains exist, display a brief summary:
@@ -368,9 +368,9 @@ Proceed? (y / n / edit)
 
 ### Phase 4: Construction
 
-**Step 17: Final Blueprint Preview (YAML)**
+**Step 17: Final Blueprint Preview**
 
-Show the complete YAML for all domains before writing. For multi-domain, show each domain sequentially. Display each entity as it will actually be written — individual per-entity files, not a flat aggregate. Group by domain directory.
+Show the complete content for all domains before writing. For multi-domain, show each domain sequentially. Display each entity as it will actually be written — individual per-entity files, not a flat aggregate. Group by domain directory.
 
 ```
 ## Final Preview — <domain_name>
@@ -386,31 +386,32 @@ _index.yaml entry:
       - <upstream_domain>
     last_modified: <today_date>
 
-objects/<Name>.yaml:
-  name: <Name>
-  description: "<description>"
-  properties:
-    - name: <property_name>
-      type: <type>
-      ...
+objects/<Name>.md:
+---
+name: <Name>
+description: "<description>"
+properties:
+  - name: <property_name>
+    type: <type>
+    ...
+---
 
-links/<name>.yaml:
-  name: <name>
-  from: <ObjectType>
-  to: <ObjectType>
-  cardinality: <cardinality>
-  description: "<description>"   # only if provided
-  refs:
-    - "[[ontology/domains/<from_directory>/objects/<FromType>|<FromType>]]"
-    - "[[ontology/domains/<to_directory>/objects/<ToType>|<ToType>]]"
+links/<name>.md:
+---
+name: <name>
+from: "[[ontology/domains/<from_directory>/objects/<FromType>|<FromType>]]"
+to: "[[ontology/domains/<to_directory>/objects/<ToType>|<ToType>]]"
+cardinality: <cardinality>
+description: "<description>"   # only if provided
+---
 
-actions/<name>.yaml:
-  name: <name>
-  description: "<description>"
-  target: <ObjectType>
-  trigger: <trigger>
-  refs:
-    - "[[ontology/domains/<target_directory>/objects/<TargetType>|<TargetType>]]"
+actions/<name>.md:
+---
+name: <name>
+description: "<description>"
+target: "[[ontology/domains/<target_directory>/objects/<TargetType>|<TargetType>]]"
+trigger: <trigger>
+---
 
 Write this as-is? (y / n / edit)
 ```
@@ -424,9 +425,9 @@ For each domain, write files directly using the `directory` per-entity format:
 **New domain (or domain not yet in `_index.yaml`):**
 
 1. Create subdirectories: `objects/`, `links/`, `actions/` under `ontology/domains/<domain_name>/`
-2. For each Object Type: Use the Write tool to create `ontology/domains/<domain_name>/objects/<Name>.yaml`
-3. For each Link Type: Use the Write tool to create `ontology/domains/<domain_name>/links/<name>.yaml`
-4. For each Action Type: Use the Write tool to create `ontology/domains/<domain_name>/actions/<name>.yaml`
+2. For each Object Type: Use the Write tool to create `ontology/domains/<domain_name>/objects/<Name>.md`
+3. For each Link Type: Use the Write tool to create `ontology/domains/<domain_name>/links/<name>.md`
+4. For each Action Type: Use the Write tool to create `ontology/domains/<domain_name>/actions/<name>.md`
 5. Update `ontology/domains/_index.yaml`:
    - Add the following domain entry:
 
@@ -445,38 +446,39 @@ For each domain, write files directly using the `directory` per-entity format:
 
 Include `dependency_direction` only if the domain declared upstream dependencies in Phase 3 Pattern 4. Omit the field entirely if no dependencies were specified.
 
-Individual file format — no wrapper keys:
+Individual file format — YAML frontmatter + Markdown body:
 
-```yaml
-# objects/User.yaml
+```markdown
+# objects/User.md
+---
 name: User
 description: "A registered user"
 properties:
   - name: user_id
     type: string
     primary: true
+---
 ```
 
-```yaml
-# links/places.yaml
+```markdown
+# links/places.md
+---
 name: places
-from: User
-to: Order
+from: "[[ontology/domains/ecommerce/objects/User|User]]"
+to: "[[ontology/domains/ecommerce/objects/Order|Order]]"
 cardinality: one_to_many
 description: "<description>"   # only if provided
-refs:
-  - "[[ontology/domains/ecommerce/objects/User|User]]"
-  - "[[ontology/domains/ecommerce/objects/Order|Order]]"
+---
 ```
 
-```yaml
-# actions/send_welcome_email.yaml
+```markdown
+# actions/send_welcome_email.md
+---
 name: send_welcome_email
 description: "Send a welcome email to a newly registered user"
-target: User
+target: "[[ontology/domains/ecommerce/objects/User|User]]"
 trigger: object_created
-refs:
-  - "[[ontology/domains/ecommerce/objects/User|User]]"
+---
 ```
 
 Always update `last_modified` in `_index.yaml` after each domain.

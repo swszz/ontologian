@@ -45,11 +45,13 @@ Read `ontology/domains/_index.yaml`. If the `domains` array is empty, output `"N
 If a `--domain` filter is set, process only that domain. Iterate over the `domains` array and Read each file.
 
 All domains use the `directory` format:
-- Glob and read `ontology/domains/<directory>/objects/*.yaml` for object type matches
-- Glob and read `ontology/domains/<directory>/links/*.yaml` for link type matches
-- Glob and read `ontology/domains/<directory>/actions/*.yaml` for action type matches
+- Glob and read `ontology/domains/<directory>/objects/*.md` for object type matches
+- Glob and read `ontology/domains/<directory>/links/*.md` for link type matches
+- Glob and read `ontology/domains/<directory>/actions/*.md` for action type matches
 
 Store type data in memory per domain. On read failure, log the error for that domain and continue.
+
+**Wiki link field parsing:** The `from`, `to`, and `target` fields may be wiki links (`"[[path|Name]]"`). Always extract the `Name` portion for display and matching. Use the full pattern: if value matches `[[<path>|<Name>]]` → use `<Name>`; otherwise use the value as-is.
 
 ---
 
@@ -111,9 +113,9 @@ Total: <N> result(s) (Object: <N>, Link: <N>, Action: <N>)
 **Result rendering (directory-format domains):**
 Use the multi-line grouped format. For each matched result, render the entity name as a markdown file link within the type header line:
 
-- Object Type: `[Object Type] [<name>](ontology/domains/<directory>/objects/<name>.yaml)`
-- Link Type: `[Link Type] [<name>](ontology/domains/<directory>/links/<name>.yaml)`
-- Action Type: `[Action Type] [<name>](ontology/domains/<directory>/actions/<name>.yaml)`
+- Object Type: `[Object Type] [<name>](ontology/domains/<directory>/objects/<name>.md)`
+- Link Type: `[Link Type] [<name>](ontology/domains/<directory>/links/<name>.md)`
+- Action Type: `[Action Type] [<name>](ontology/domains/<directory>/actions/<name>.md)`
 
 The description, properties, and other detail lines below the header remain as plain text. Apply this format only to directory-format domains.
 

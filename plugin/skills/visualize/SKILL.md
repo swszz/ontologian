@@ -69,9 +69,11 @@ Enter a number or 'all':
 
 All domains use the `directory` format:
 
-- Glob `ontology/domains/<directory>/objects/*.yaml` → Read each → collect object names and properties
-- Glob `ontology/domains/<directory>/links/*.yaml` → Read each → collect link definitions (name, from, to, cardinality)
-- Glob `ontology/domains/<directory>/actions/*.yaml` → Read each → collect action definitions
+- Glob `ontology/domains/<directory>/objects/*.md` → Read each → collect object names and properties
+- Glob `ontology/domains/<directory>/links/*.md` → Read each → collect link definitions (name, from, to, cardinality)
+- Glob `ontology/domains/<directory>/actions/*.md` → Read each → collect action definitions
+
+**Wiki link field parsing:** The `from`, `to`, and `target` fields may be wiki links (`"[[path|Name]]"`). Always extract the `Name` portion for rendering. If value matches `[[<path>|<Name>]]` → use `<Name>`; otherwise use the value as-is.
 
 If a file cannot be read, output the following and skip that domain:
 
@@ -93,7 +95,7 @@ Output in the following format. Always output every section even if it has no da
 
 **File link rendering (directory-format domains):**
 Object Type labels in the diagram use file link format:
-[<ObjectType>](ontology/domains/<directory>/objects/<ObjectType>.yaml)
+[<ObjectType>](ontology/domains/<directory>/objects/<ObjectType>.md)
 
 #### 5-A: Object Types box
 

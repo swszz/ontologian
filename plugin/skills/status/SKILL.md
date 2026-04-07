@@ -62,15 +62,15 @@ If a domain name was provided as an argument (e.g. `/ontologian ecommerce`):
 
 Iterate over the `domains` array in `_index.yaml` and aggregate type counts per domain.
 
-All domains use the `directory` format. Glob `.yaml` files in `ontology/domains/<directory>/objects/`, `ontology/domains/<directory>/links/`, and `ontology/domains/<directory>/actions/` to get counts.
+All domains use the `directory` format. Glob `.md` files in `ontology/domains/<directory>/objects/`, `ontology/domains/<directory>/links/`, and `ontology/domains/<directory>/actions/` to get counts.
 
 **Aggregate per domain:**
 
 | Field | How to count |
 |-------|-------------|
-| `object_count` | Number of `.yaml` files returned by glob in `ontology/domains/<directory>/objects/` |
-| `link_count` | Number of `.yaml` files returned by glob in `ontology/domains/<directory>/links/` |
-| `action_count` | Number of `.yaml` files returned by glob in `ontology/domains/<directory>/actions/` |
+| `object_count` | Number of `.md` files returned by glob in `ontology/domains/<directory>/objects/` |
+| `link_count` | Number of `.md` files returned by glob in `ontology/domains/<directory>/links/` |
+| `action_count` | Number of `.md` files returned by glob in `ontology/domains/<directory>/actions/` |
 | `last_modified` | Value from `_index.yaml` for that domain |
 
 If a domain file cannot be read, show `(read error)` in that row and skip it.
@@ -121,7 +121,7 @@ Possible cross-domain reference: <domain>.<ObjectType>.<property_name>
 
 For `directory`-format domains, render the ObjectType as a file link:
 ```
-Possible cross-domain reference: <domain>.[<ObjectType>](ontology/domains/<directory>/objects/<ObjectType>.yaml).<property_name>
+Possible cross-domain reference: <domain>.[<ObjectType>](ontology/domains/<directory>/objects/<ObjectType>.md).<property_name>
 ```
 
 

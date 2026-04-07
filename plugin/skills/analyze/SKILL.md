@@ -48,9 +48,9 @@ Store the input as `requirements_text`.
 Read `ontology/domains/_index.yaml`. Iterate over the `domains` array and read each domain's files.
 
 All domains use the `directory` format:
-- Glob `ontology/domains/<directory>/objects/*.yaml` → read each → collect Object Type names
-- Glob `ontology/domains/<directory>/links/*.yaml` → read each → collect Link Type names
-- Glob `ontology/domains/<directory>/actions/*.yaml` → read each → collect Action Type names
+- Glob `ontology/domains/<directory>/objects/*.md` → read each → collect Object Type names
+- Glob `ontology/domains/<directory>/links/*.md` → read each → collect Link Type names
+- Glob `ontology/domains/<directory>/actions/*.md` → read each → collect Action Type names
 
 If a directory or file cannot be read, skip that domain and continue.
 
@@ -508,10 +508,11 @@ If option B (distribute) was selected in Step 7, repeat the logic below for each
 Write individual entity files using the per-entity directory format. Do **not** create a flat `ontology.yaml`.
 
 **Object Types:** For each confirmed Object Type, use the Write tool to create:
-`ontology/domains/<domain_name>/objects/<Name>.yaml`
+`ontology/domains/<domain_name>/objects/<Name>.md`
 
-File content (no wrapper keys):
-```yaml
+File content:
+```markdown
+---
 name: <Name>
 description: "<description>"
 properties:
@@ -521,33 +522,34 @@ properties:
     primary: true                  # only when true
     computed: true                 # only when true
     expression: "<expr>"           # only when computed=true and expression provided
+---
 ```
 
 **Link Types:** For each confirmed Link Type, use the Write tool to create:
-`ontology/domains/<domain_name>/links/<name>.yaml`
+`ontology/domains/<domain_name>/links/<name>.md`
 
 File content:
-```yaml
+```markdown
+---
 name: <name>
-from: <ObjectType>
-to: <ObjectType>
+from: "[[ontology/domains/<from_directory>/objects/<FromType>|<FromType>]]"
+to: "[[ontology/domains/<to_directory>/objects/<ToType>|<ToType>]]"
 cardinality: <cardinality>
 description: "<description>"  # only if provided
-refs:
-  - "[[ontology/domains/<from_directory>/objects/<FromType>|<FromType>]]"
-  - "[[ontology/domains/<to_directory>/objects/<ToType>|<ToType>]]"
+---
 ```
 
 Resolve `<from_directory>` and `<to_directory>` by looking up which domain each Object Type belongs to (already loaded in Step 3). If an Object Type belongs to a different domain, verify that domain appears in the current domain's `dependency_direction`. If it does not, flag it as a cross-domain integrity error and surface it in the Step 11 completion message.
 
 **Action Types:** For each confirmed Action Type, use the Write tool to create:
-`ontology/domains/<domain_name>/actions/<name>.yaml`
+`ontology/domains/<domain_name>/actions/<name>.md`
 
 File content:
-```yaml
+```markdown
+---
 name: <name>
 description: "<description>"  # only if provided
-target: <ObjectType>
+target: "[[ontology/domains/<target_directory>/objects/<TargetType>|<TargetType>]]"
 trigger: <trigger>
 trigger_condition:             # only when trigger=object_updated and field provided
   field: <field>
@@ -557,8 +559,7 @@ parameters:                    # only when at least one parameter
   - name: <param>
     type: <type>
     required: false            # only when false; omit when true
-refs:
-  - "[[ontology/domains/<target_directory>/objects/<TargetType>|<TargetType>]]"
+---
 ```
 
 Resolve `<target_directory>` using the same domain lookup. Apply the same cross-domain `dependency_direction` check.
@@ -589,9 +590,9 @@ For each confirmed Object Type, Link Type, and Action Type being added to this d
   If n → skip this entry. If y → overwrite.
 
 - Use the Write tool to create or overwrite the appropriate file:
-  - Object Type → `ontology/domains/<directory>/objects/<Name>.yaml`
-  - Link Type → `ontology/domains/<directory>/links/<name>.yaml`
-  - Action Type → `ontology/domains/<directory>/actions/<name>.yaml`
+  - Object Type → `ontology/domains/<directory>/objects/<Name>.md`
+  - Link Type → `ontology/domains/<directory>/links/<name>.md`
+  - Action Type → `ontology/domains/<directory>/actions/<name>.md`
 
 File formats are identical to Step 9-A.
 
@@ -643,7 +644,7 @@ After all writes, always update the domain's `last_modified` in `_index.yaml` to
 - **Skipping Step 3** → Always load existing ontology. Conflict detection depends on it.
 - **Including pending items (S) in final YAML** → Items still at `confidence: low` are not added to YAML. Show them only in the Step 8 pending section.
 - **Using `path:` instead of `directory:` in `_index.yaml`** → New domain entries must use the `directory:` field (e.g. `directory: ecommerce`). Never write `path:` or `paths:` fields.
-- **Writing a flat `ontology.yaml`** → Always write to per-entity files: `objects/<Name>.yaml`, `links/<name>.yaml`, `actions/<name>.yaml`. Never create a flat `ontology.yaml`.
+- **Writing a flat `ontology.yaml`** → Always write to per-entity files: `objects/<Name>.md`, `links/<name>.md`, `actions/<name>.md`. Never create a flat `ontology.yaml`.
 - **Wrong name format in output YAML** → Object Type=PascalCase, Link Type=lowercase+underscores, Action Type=snake_case.
 - **Nouns in Link Type names** → `reviews_course`, `earns_certificate` are not allowed. Use pure verb form: `reviews`, `earns`. Phrasal verbs with prepositions (`results_in`, `belongs_to`, `paid_with`) are allowed since the suffix is a preposition, not a noun.
 - **trigger_condition.field must be a property of target** → When trigger target ≠ action target, always mark as `ambiguous_trigger_condition` and get user confirmation. In `object_updated` actions, `target` is the Object whose field changes (the field owner), not an Object created as a side effect.

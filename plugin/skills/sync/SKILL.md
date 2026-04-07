@@ -47,9 +47,9 @@ No domains to sync. (domains array is empty)
 
 Collect the file list from each domain entry. All domains use the `directory` format. For each domain in the `domains` array, use the `directory` field to enumerate actual files:
 
-- Glob `ontology/domains/<directory>/objects/*.yaml` → add each matched path's relative segment (e.g. `ecommerce/objects/Product.yaml`) to `sync_files`
-- Glob `ontology/domains/<directory>/links/*.yaml` → add each matched path's relative segment
-- Glob `ontology/domains/<directory>/actions/*.yaml` → add each matched path's relative segment
+- Glob `ontology/domains/<directory>/objects/*.md` → add each matched path's relative segment (e.g. `ecommerce/objects/Product.md`) to `sync_files`
+- Glob `ontology/domains/<directory>/links/*.md` → add each matched path's relative segment
+- Glob `ontology/domains/<directory>/actions/*.md` → add each matched path's relative segment
 
 If a subdirectory does not exist or Glob returns no matches, skip that subdirectory and continue.
 
@@ -65,9 +65,9 @@ Show `_index.yaml` as: `ontology/domains/_index.yaml` → `<global_path>/domains
 ```
 ## Sync Preview
 Local → Global (<global_path>)
-  ecommerce/objects/Product.yaml → <global_path>/domains/ecommerce/objects/Product.yaml
-  ecommerce/links/places.yaml    → <global_path>/domains/ecommerce/links/places.yaml
-  ecommerce/actions/send_welcome_email.yaml → <global_path>/domains/ecommerce/actions/send_welcome_email.yaml
+  ecommerce/objects/Product.md → <global_path>/domains/ecommerce/objects/Product.md
+  ecommerce/links/places.md    → <global_path>/domains/ecommerce/links/places.md
+  ecommerce/actions/send_welcome_email.md → <global_path>/domains/ecommerce/actions/send_welcome_email.md
   domains/_index.yaml            → <global_path>/domains/_index.yaml
 Total: N file(s)
 
@@ -138,7 +138,7 @@ All domains use the `directory` format. Iterate over all files collected in `syn
 1. Use the Read tool to read the source file at `ontology/domains/<relative_path>`
 2. Use the Write tool to write the content to `<global_path>/domains/<relative_path>`
 
-Where `<relative_path>` is the path segment after `ontology/domains/` (e.g. `ecommerce/objects/Product.yaml`).
+Where `<relative_path>` is the path segment after `ontology/domains/` (e.g. `ecommerce/objects/Product.md`).
 
 This covers all files in `objects/`, `links/`, and `actions/` subdirectories for each domain.
 

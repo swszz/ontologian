@@ -1,6 +1,6 @@
 {
   "name": "ontologian",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "type": "module",
   "description": "Palantir ontology concepts for knowledge management in Claude Code",
   "author": "swszz",

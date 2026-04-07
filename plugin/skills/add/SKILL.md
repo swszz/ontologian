@@ -608,6 +608,9 @@ from: <ObjectType>
 to: <ObjectType>
 cardinality: <cardinality>
 description: "<description>"  # only if provided
+refs:
+  - "[[<ObjectType_from>]]"
+  - "[[<ObjectType_to>]]"
 ```
 
 **Action Type:**
@@ -627,6 +630,8 @@ parameters:       # only when at least one parameter
   - name: <param>
     type: <type>
     required: false  # only when false; omit when true
+refs:
+  - "[[<ObjectType>]]"
 ```
 
 Update `last_modified` in `_index.yaml` to today's date after writing.

@@ -400,12 +400,17 @@ links/<name>.yaml:
   to: <ObjectType>
   cardinality: <cardinality>
   description: "<description>"   # only if provided
+  refs:
+    - "[[<ObjectType_from>]]"
+    - "[[<ObjectType_to>]]"
 
 actions/<name>.yaml:
   name: <name>
   description: "<description>"
   target: <ObjectType>
   trigger: <trigger>
+  refs:
+    - "[[<ObjectType>]]"
 
 Write this as-is? (y / n / edit)
 ```
@@ -459,6 +464,9 @@ from: User
 to: Order
 cardinality: one_to_many
 description: "<description>"   # only if provided
+refs:
+  - "[[User]]"
+  - "[[Order]]"
 ```
 
 ```yaml
@@ -467,6 +475,8 @@ name: send_welcome_email
 description: "Send a welcome email to a newly registered user"
 target: User
 trigger: object_created
+refs:
+  - "[[User]]"
 ```
 
 Always update `last_modified` in `_index.yaml` after each domain.

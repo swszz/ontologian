@@ -533,6 +533,9 @@ from: <ObjectType>
 to: <ObjectType>
 cardinality: <cardinality>
 description: "<description>"  # only if provided
+refs:
+  - "[[<ObjectType_from>]]"
+  - "[[<ObjectType_to>]]"
 ```
 
 **Action Types:** For each confirmed Action Type, use the Write tool to create:
@@ -552,6 +555,8 @@ parameters:                    # only when at least one parameter
   - name: <param>
     type: <type>
     required: false            # only when false; omit when true
+refs:
+  - "[[<ObjectType>]]"
 ```
 
 **Update `_index.yaml`:** Use Edit to add the new domain entry with `directory:` field (not `path:`):

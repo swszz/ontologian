@@ -48,7 +48,7 @@ No need to re-run `setup.sh` — this updates commands and agent only.
 | `/ontologian-analyze` | Derive ontology structure from free-form requirements |
 | `/ontologian-search <keyword>` | Search across all domains (use `--type object\|link\|action` and `--domain <name>` to filter) |
 | `/ontologian-validate` | Check YAML schema and referential integrity |
-| `/ontologian-sync` | Sync local `.ontology/` to the global store |
+| `/ontologian-sync` | Sync local `ontology/` to the global store |
 | `/ontologian-visualize` | Render an ASCII relationship diagram |
 
 ### Consulting Agent
@@ -67,7 +67,7 @@ The consulting session covers 6 phases:
 | **Modeling** | Autonomous candidate derivation using the same rules as `/ontologian-analyze` |
 | **Design** | Palantir enrichment patterns: object enrichment, state machine audit, semantic naming review, governance metadata |
 | **Construction** | Writes all domain files in dependency order, runs automatic validation |
-| **Delivery** | Renders ASCII diagrams for all domains, generates `.ontology/CONSULT_REPORT.md` |
+| **Delivery** | Renders ASCII diagrams for all domains, generates `ontology/CONSULT_REPORT.md` |
 
 ---
 
@@ -124,13 +124,13 @@ ontologian/
 
 ## How It Works
 
-The `.ontology/` directory is created **lazily** — it does not exist until you run your first write command (`/ontologian-add` or `/ontologian-analyze`). Read-only commands (`/ontologian`, `/ontologian-validate`, `/ontologian-search`) require the directory to already exist.
+The `ontology/` directory is created **lazily** — it does not exist until you run your first write command (`/ontologian-add` or `/ontologian-analyze`). Read-only commands (`/ontologian`, `/ontologian-validate`, `/ontologian-search`) require the directory to already exist.
 
 When first created, the directory structure looks like this:
 
 ```
 <project-root>/
-└── .ontology/
+└── ontology/
     ├── config.yaml              # Plugin config (sync mode, global path)
     └── domains/
         ├── _index.yaml          # Domain registry
@@ -256,7 +256,7 @@ Represents a triggerable operation on an Object Type.
 
 ## Global Store
 
-The global store at `~/.ontologian/` (configurable) mirrors your local `.ontology/` directory and enables reuse of domain definitions across multiple projects.
+The global store at `~/.ontologian/` (configurable) mirrors your local `ontology/` directory and enables reuse of domain definitions across multiple projects.
 
 Sync behavior is controlled by `global_sync` in `config.yaml`:
 - `ask` — prompts before each sync

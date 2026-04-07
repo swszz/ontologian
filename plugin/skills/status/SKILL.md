@@ -11,9 +11,9 @@ Display a summary table and available commands for the project's ontology reposi
 
 ## Steps
 
-### Step 1: Check `.ontology/` exists
+### Step 1: Check `ontology/` exists
 
-Glob `.ontology/config.yaml` → if missing, output the following and **exit immediately**:
+Glob `ontology/config.yaml` → if missing, output the following and **exit immediately**:
 
 ```
 The ontology repository is not initialized.
@@ -31,7 +31,7 @@ Available commands:
 
 ### Step 2: Read config.yaml
 
-Use the Read tool to read `.ontology/config.yaml` and extract:
+Use the Read tool to read `ontology/config.yaml` and extract:
 
 - `version`
 - `global_sync` (default: `ask`)
@@ -39,7 +39,7 @@ Use the Read tool to read `.ontology/config.yaml` and extract:
 
 ### Step 3: Read `_index.yaml`
 
-Use the Read tool to read `.ontology/domains/_index.yaml`.
+Use the Read tool to read `ontology/domains/_index.yaml`.
 
 If the file is missing or the `domains` list is empty, output:
 
@@ -62,15 +62,15 @@ If a domain name was provided as an argument (e.g. `/ontologian ecommerce`):
 
 Iterate over the `domains` array in `_index.yaml` and aggregate type counts per domain.
 
-All domains use the `directory` format. Glob `.yaml` files in `.ontology/domains/<directory>/objects/`, `.ontology/domains/<directory>/links/`, and `.ontology/domains/<directory>/actions/` to get counts.
+All domains use the `directory` format. Glob `.yaml` files in `ontology/domains/<directory>/objects/`, `ontology/domains/<directory>/links/`, and `ontology/domains/<directory>/actions/` to get counts.
 
 **Aggregate per domain:**
 
 | Field | How to count |
 |-------|-------------|
-| `object_count` | Number of `.yaml` files returned by glob in `.ontology/domains/<directory>/objects/` |
-| `link_count` | Number of `.yaml` files returned by glob in `.ontology/domains/<directory>/links/` |
-| `action_count` | Number of `.yaml` files returned by glob in `.ontology/domains/<directory>/actions/` |
+| `object_count` | Number of `.yaml` files returned by glob in `ontology/domains/<directory>/objects/` |
+| `link_count` | Number of `.yaml` files returned by glob in `ontology/domains/<directory>/links/` |
+| `action_count` | Number of `.yaml` files returned by glob in `ontology/domains/<directory>/actions/` |
 | `last_modified` | Value from `_index.yaml` for that domain |
 
 If a domain file cannot be read, show `(read error)` in that row and skip it.
@@ -110,7 +110,7 @@ Available commands:
 
 **File link rendering (directory-format domains only):**
 For domains using the `directory` format, render the domain name in the table as a markdown link:
-`[<name>](.ontology/domains/<directory>/)`
+`[<name>](ontology/domains/<directory>/)`
 
 After the domains table and totals line, scan all properties across all domains:
 
@@ -121,7 +121,7 @@ Possible cross-domain reference: <domain>.<ObjectType>.<property_name>
 
 For `directory`-format domains, render the ObjectType as a file link:
 ```
-Possible cross-domain reference: <domain>.[<ObjectType>](.ontology/domains/<directory>/objects/<ObjectType>.yaml).<property_name>
+Possible cross-domain reference: <domain>.[<ObjectType>](ontology/domains/<directory>/objects/<ObjectType>.yaml).<property_name>
 ```
 
 

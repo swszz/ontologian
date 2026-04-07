@@ -1,13 +1,13 @@
 ---
 name: ontologian-sync
-description: Use when the user runs /ontologian-sync or wants to manually sync local .ontology/ to the global ~/.ontologian/ directory.
+description: Use when the user runs /ontologian-sync or wants to manually sync local ontology/ to the global ~/.ontologian/ directory.
 ---
 
 # Ontologian — Sync
 
 ## Overview
 
-Manually sync the local `.ontology/` directory to the global `~/.ontologian/` store.
+Manually sync the local `ontology/` directory to the global `~/.ontologian/` store.
 Show a preview before syncing and wait for user confirmation before copying files.
 
 ---
@@ -16,14 +16,14 @@ Show a preview before syncing and wait for user confirmation before copying file
 
 ### Step 1: Initialization check
 
-Glob `.ontology/config.yaml` → if missing, output `"Ontology is not initialized. (.ontology/config.yaml not found)"` and **exit immediately**.
+Glob `ontology/config.yaml` → if missing, output `"Ontology is not initialized. (ontology/config.yaml not found)"` and **exit immediately**.
 
 ### Step 2: Read config.yaml
 
-Use the Read tool to read `.ontology/config.yaml`:
+Use the Read tool to read `ontology/config.yaml`:
 
 ```
-Read: .ontology/config.yaml
+Read: ontology/config.yaml
 ```
 
 Store the following values in memory:
@@ -33,10 +33,10 @@ Store the following values in memory:
 
 ### Step 3: Read _index.yaml
 
-Use the Read tool to read `.ontology/domains/_index.yaml`:
+Use the Read tool to read `ontology/domains/_index.yaml`:
 
 ```
-Read: .ontology/domains/_index.yaml
+Read: ontology/domains/_index.yaml
 ```
 
 If the `domains` array is absent or empty, output the following and **exit immediately**:
@@ -47,9 +47,9 @@ No domains to sync. (domains array is empty)
 
 Collect the file list from each domain entry. All domains use the `directory` format. For each domain in the `domains` array, use the `directory` field to enumerate actual files:
 
-- Glob `.ontology/domains/<directory>/objects/*.yaml` → add each matched path's relative segment (e.g. `ecommerce/objects/Product.yaml`) to `sync_files`
-- Glob `.ontology/domains/<directory>/links/*.yaml` → add each matched path's relative segment
-- Glob `.ontology/domains/<directory>/actions/*.yaml` → add each matched path's relative segment
+- Glob `ontology/domains/<directory>/objects/*.yaml` → add each matched path's relative segment (e.g. `ecommerce/objects/Product.yaml`) to `sync_files`
+- Glob `ontology/domains/<directory>/links/*.yaml` → add each matched path's relative segment
+- Glob `ontology/domains/<directory>/actions/*.yaml` → add each matched path's relative segment
 
 If a subdirectory does not exist or Glob returns no matches, skip that subdirectory and continue.
 
@@ -59,8 +59,8 @@ Also include `_index.yaml` itself as a sync target.
 ### Step 4: Output sync preview
 
 Build the preview from the `sync_files` array.
-Show local paths as `.ontology/domains/<file>` and global paths as `<global_path>/domains/<file>`.
-Show `_index.yaml` as: `.ontology/domains/_index.yaml` → `<global_path>/domains/_index.yaml`.
+Show local paths as `ontology/domains/<file>` and global paths as `<global_path>/domains/<file>`.
+Show `_index.yaml` as: `ontology/domains/_index.yaml` → `<global_path>/domains/_index.yaml`.
 
 ```
 ## Sync Preview
@@ -135,10 +135,10 @@ Only proceed to Step 6 after all directories are confirmed.
 
 All domains use the `directory` format. Iterate over all files collected in `sync_files`. For each file in the array:
 
-1. Use the Read tool to read the source file at `.ontology/domains/<relative_path>`
+1. Use the Read tool to read the source file at `ontology/domains/<relative_path>`
 2. Use the Write tool to write the content to `<global_path>/domains/<relative_path>`
 
-Where `<relative_path>` is the path segment after `.ontology/domains/` (e.g. `ecommerce/objects/Product.yaml`).
+Where `<relative_path>` is the path segment after `ontology/domains/` (e.g. `ecommerce/objects/Product.yaml`).
 
 This covers all files in `objects/`, `links/`, and `actions/` subdirectories for each domain.
 
@@ -151,7 +151,7 @@ If a Read or Write fails for any individual file, add to the warnings list and *
 Do not stop copying remaining files on failure. Always overwrite destination files if they exist.
 
 After copying all domain files, always overwrite the global `_index.yaml`:
-1. Use the Read tool to read `.ontology/domains/_index.yaml`
+1. Use the Read tool to read `ontology/domains/_index.yaml`
 2. Use the Write tool to write to `<global_path>/domains/_index.yaml`
 
 ### Step 7: Output completion message

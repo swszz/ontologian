@@ -16,11 +16,11 @@ Display Object Types, Relationships (Link Types), and Actions (Action Types) in 
 
 ### Step 1: Initialization check
 
-Glob `.ontology/domains/_index.yaml` → if missing, output `"Ontology is not initialized."` and **exit immediately**.
+Glob `ontology/domains/_index.yaml` → if missing, output `"Ontology is not initialized."` and **exit immediately**.
 
 ### Step 2: Read `_index.yaml`
 
-Use the Read tool to read `.ontology/domains/_index.yaml`.
+Use the Read tool to read `ontology/domains/_index.yaml`.
 
 If the `domains` array is empty:
 
@@ -69,9 +69,9 @@ Enter a number or 'all':
 
 All domains use the `directory` format:
 
-- Glob `.ontology/domains/<directory>/objects/*.yaml` → Read each → collect object names and properties
-- Glob `.ontology/domains/<directory>/links/*.yaml` → Read each → collect link definitions (name, from, to, cardinality)
-- Glob `.ontology/domains/<directory>/actions/*.yaml` → Read each → collect action definitions
+- Glob `ontology/domains/<directory>/objects/*.yaml` → Read each → collect object names and properties
+- Glob `ontology/domains/<directory>/links/*.yaml` → Read each → collect link definitions (name, from, to, cardinality)
+- Glob `ontology/domains/<directory>/actions/*.yaml` → Read each → collect action definitions
 
 If a file cannot be read, output the following and skip that domain:
 
@@ -93,7 +93,7 @@ Output in the following format. Always output every section even if it has no da
 
 **File link rendering (directory-format domains):**
 Object Type labels in the diagram use file link format:
-[<ObjectType>](.ontology/domains/<directory>/objects/<ObjectType>.yaml)
+[<ObjectType>](ontology/domains/<directory>/objects/<ObjectType>.yaml)
 
 #### 5-A: Object Types box
 

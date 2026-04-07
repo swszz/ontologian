@@ -20,10 +20,10 @@ Accept free-form business requirements text and automatically derive an ontology
 
 ### Step 1: Initialization check
 
-Glob `.ontology/config.yaml`:
+Glob `ontology/config.yaml`:
 - **If missing**: `"The ontology repository is not initialized. Initialize it now? (y/n)"` → `n`=exit, `y`=Write the following two files and continue:
-  - `.ontology/config.yaml`: `version: 1 / global_sync: ask / global_path: ~/.ontologian`
-  - `.ontology/domains/_index.yaml`: `domains: []`
+  - `ontology/config.yaml`: `version: 1 / global_sync: ask / global_path: ~/.ontologian`
+  - `ontology/domains/_index.yaml`: `domains: []`
 - **If present**: Read it and store `global_sync`, `global_path` (defaults: `ask`, `~/.ontologian`)
 
 ---
@@ -45,12 +45,12 @@ Store the input as `requirements_text`.
 
 ### Step 3: Load existing ontology
 
-Read `.ontology/domains/_index.yaml`. Iterate over the `domains` array and read each domain's files.
+Read `ontology/domains/_index.yaml`. Iterate over the `domains` array and read each domain's files.
 
 All domains use the `directory` format:
-- Glob `.ontology/domains/<directory>/objects/*.yaml` → read each → collect Object Type names
-- Glob `.ontology/domains/<directory>/links/*.yaml` → read each → collect Link Type names
-- Glob `.ontology/domains/<directory>/actions/*.yaml` → read each → collect Action Type names
+- Glob `ontology/domains/<directory>/objects/*.yaml` → read each → collect Object Type names
+- Glob `ontology/domains/<directory>/links/*.yaml` → read each → collect Link Type names
+- Glob `ontology/domains/<directory>/actions/*.yaml` → read each → collect Action Type names
 
 If a directory or file cannot be read, skip that domain and continue.
 
@@ -508,7 +508,7 @@ If option B (distribute) was selected in Step 7, repeat the logic below for each
 Write individual entity files using the per-entity directory format. Do **not** create a flat `ontology.yaml`.
 
 **Object Types:** For each confirmed Object Type, use the Write tool to create:
-`.ontology/domains/<domain_name>/objects/<Name>.yaml`
+`ontology/domains/<domain_name>/objects/<Name>.yaml`
 
 File content (no wrapper keys):
 ```yaml
@@ -524,7 +524,7 @@ properties:
 ```
 
 **Link Types:** For each confirmed Link Type, use the Write tool to create:
-`.ontology/domains/<domain_name>/links/<name>.yaml`
+`ontology/domains/<domain_name>/links/<name>.yaml`
 
 File content:
 ```yaml
@@ -536,7 +536,7 @@ description: "<description>"  # only if provided
 ```
 
 **Action Types:** For each confirmed Action Type, use the Write tool to create:
-`.ontology/domains/<domain_name>/actions/<name>.yaml`
+`ontology/domains/<domain_name>/actions/<name>.yaml`
 
 File content:
 ```yaml
@@ -580,9 +580,9 @@ For each confirmed Object Type, Link Type, and Action Type being added to this d
   If n → skip this entry. If y → overwrite.
 
 - Use the Write tool to create or overwrite the appropriate file:
-  - Object Type → `.ontology/domains/<directory>/objects/<Name>.yaml`
-  - Link Type → `.ontology/domains/<directory>/links/<name>.yaml`
-  - Action Type → `.ontology/domains/<directory>/actions/<name>.yaml`
+  - Object Type → `ontology/domains/<directory>/objects/<Name>.yaml`
+  - Link Type → `ontology/domains/<directory>/links/<name>.yaml`
+  - Action Type → `ontology/domains/<directory>/actions/<name>.yaml`
 
 File formats are identical to Step 9-A.
 
@@ -611,9 +611,9 @@ After all writes, always update the domain's `last_modified` in `_index.yaml` to
     Link Types    : N (...)
     Action Types  : N (...)
 
-  → .ontology/domains/<domain_name>/objects/  (<n> Object Type files)
-  → .ontology/domains/<domain_name>/links/    (<n> Link Type files)
-  → .ontology/domains/<domain_name>/actions/  (<n> Action Type files)
+  → ontology/domains/<domain_name>/objects/  (<n> Object Type files)
+  → ontology/domains/<domain_name>/links/    (<n> Link Type files)
+  → ontology/domains/<domain_name>/actions/  (<n> Action Type files)
 
 [i] Tip: Run /ontologian-validate to check for schema issues, or /ontologian-visualize to see your new types in context.
 ```

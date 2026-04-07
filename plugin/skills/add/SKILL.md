@@ -16,10 +16,10 @@ Interactively add a new Object Type, Link Type, or Action Type to the ontology.
 
 ### Step 1: Initialization check
 
-Glob `.ontology/config.yaml`:
+Glob `ontology/config.yaml`:
 - **If missing**: `"The ontology repository is not initialized. Initialize it now? (y/n)"` → `n`=exit, `y`=Write the following two files and continue:
-  - `.ontology/config.yaml`: `version: 1 / global_sync: ask / global_path: ~/.ontologian`
-  - `.ontology/domains/_index.yaml`: `domains: []`
+  - `ontology/config.yaml`: `version: 1 / global_sync: ask / global_path: ~/.ontologian`
+  - `ontology/domains/_index.yaml`: `domains: []`
 - **If present**: Read it and store `global_sync`, `global_path` (defaults: `ask`, `~/.ontologian`)
 
 ### Step 1-B: Parse arguments
@@ -45,7 +45,7 @@ In each subsequent step, if a `prefilled` value exists for a field, skip the cor
 Use the Read tool to load the domain list:
 
 ```
-Read: .ontology/domains/_index.yaml
+Read: ontology/domains/_index.yaml
 ```
 
 Store the `domains` array in memory. Continue even if the array is empty.
@@ -539,9 +539,9 @@ Proceed with adding the above? (y / n / edit)
 Create the per-entity YAML files and the domain subdirectory structure. Do **not** create a flat `ontology.yaml` for new domains.
 
 **Write the entity file**: Use the Write tool to create the appropriate file based on type:
-- Object Type → `.ontology/domains/<domain_name>/objects/<Name>.yaml`
-- Link Type → `.ontology/domains/<domain_name>/links/<name>.yaml`
-- Action Type → `.ontology/domains/<domain_name>/actions/<name>.yaml`
+- Object Type → `ontology/domains/<domain_name>/objects/<Name>.yaml`
+- Link Type → `ontology/domains/<domain_name>/links/<name>.yaml`
+- Action Type → `ontology/domains/<domain_name>/actions/<name>.yaml`
 
 Write the `new_entry` contents directly into that file (not wrapped in an array — a single YAML document).
 
@@ -578,12 +578,12 @@ domains:
 #### 7-B: Existing domain (`directory` field present)
 
 Target directories:
-- Object Type: `.ontology/domains/<directory>/objects/`
-- Link Type: `.ontology/domains/<directory>/links/`
-- Action Type: `.ontology/domains/<directory>/actions/`
+- Object Type: `ontology/domains/<directory>/objects/`
+- Link Type: `ontology/domains/<directory>/links/`
+- Action Type: `ontology/domains/<directory>/actions/`
 
 **Object Type:**
-Check that `.ontology/domains/<directory>/objects/<Name>.yaml` does not already exist.
+Check that `ontology/domains/<directory>/objects/<Name>.yaml` does not already exist.
 If it exists, warn:
 ```
 ⚠️ Object Type "<Name>" already exists at <path>. Overwrite? (y/n)
@@ -599,7 +599,7 @@ properties:
 ```
 
 **Link Type:**
-Check that `.ontology/domains/<directory>/links/<name>.yaml` does not already exist.
+Check that `ontology/domains/<directory>/links/<name>.yaml` does not already exist.
 If it exists → warn and ask to overwrite (same as Object Type).
 Write:
 ```yaml
@@ -611,7 +611,7 @@ description: "<description>"  # only if provided
 ```
 
 **Action Type:**
-Check that `.ontology/domains/<directory>/actions/<name>.yaml` does not already exist.
+Check that `ontology/domains/<directory>/actions/<name>.yaml` does not already exist.
 If it exists → warn and ask to overwrite.
 Write:
 ```yaml
@@ -640,7 +640,7 @@ Update `last_modified` in `_index.yaml` to today's date after writing.
 - `off` → skip
 
 **Proceed**: For each file that was written in Step 7, use the Read tool to read the source file, then use the Write tool to write its contents to the corresponding path under `<global_path>/domains/`. Repeat for each file individually.
-- Always overwrite `<global_path>/domains/_index.yaml` last: Read `.ontology/domains/_index.yaml` → Write to `<global_path>/domains/_index.yaml`.
+- Always overwrite `<global_path>/domains/_index.yaml` last: Read `ontology/domains/_index.yaml` → Write to `<global_path>/domains/_index.yaml`.
 
 ---
 
@@ -652,9 +652,9 @@ Update `last_modified` in `_index.yaml` to today's date after writing.
 ```
 
 Where `<file_path>` is the actual path of the file created:
-- Object Type: `.ontology/domains/<directory>/objects/<Name>.yaml`
-- Link Type: `.ontology/domains/<directory>/links/<name>.yaml`
-- Action Type: `.ontology/domains/<directory>/actions/<name>.yaml`
+- Object Type: `ontology/domains/<directory>/objects/<Name>.yaml`
+- Link Type: `ontology/domains/<directory>/links/<name>.yaml`
+- Action Type: `ontology/domains/<directory>/actions/<name>.yaml`
 
 `<type_label>` mapping:
 - Object Type → `Object Type`

@@ -27,8 +27,8 @@ The consulting session runs in 6 sequential phases. Each phase has a defined sco
 | **Phase 1** | Discovery | 5-axis structured interview: entities, relationships, processes, boundaries, governance | None (stored in memory) | Raw domain facts collected |
 | **Phase 2** | Modeling | Autonomous — derives Object, Link, Action type candidates using `/ontologian-analyze` rules | None (internal draft) | Candidate types derived from Discovery output |
 | **Phase 3** | Design | Reviews candidates against Palantir enrichment patterns: object enrichment, state machine audit, semantic naming, governance metadata | None (internal refinement) | Palantir-grade patterns applied |
-| **Phase 4** | Construction | Writes all domain files in dependency order; runs `/ontologian-validate` automatically | `objects/<Name>.yaml` per Object Type, `links/<name>.yaml` per Link Type, `actions/<name>.yaml` per Action Type, `.ontology/domains/_index.yaml` | Files written; validation errors resolved before proceeding |
-| **Phase 5** | Delivery | Renders ASCII relationship diagrams; generates final report | `.ontology/CONSULT_REPORT.md` | Session complete |
+| **Phase 4** | Construction | Writes all domain files in dependency order; runs `/ontologian-validate` automatically | `objects/<Name>.yaml` per Object Type, `links/<name>.yaml` per Link Type, `actions/<name>.yaml` per Action Type, `ontology/domains/_index.yaml` | Files written; validation errors resolved before proceeding |
+| **Phase 5** | Delivery | Renders ASCII relationship diagrams; generates final report | `ontology/CONSULT_REPORT.md` | Session complete |
 
 Full agent specification: `agents/ontology-consultant.md`
 

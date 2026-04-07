@@ -1,5 +1,5 @@
 # User project data (not part of the plugin)
-.ontology/
+ontology/
 
 # IDE
 .idea/

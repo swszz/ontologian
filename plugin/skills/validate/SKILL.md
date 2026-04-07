@@ -16,7 +16,7 @@ Output a pass message when no errors are found, or a detailed list of errors by 
 
 ### Step 1: Initialization check
 
-Glob `.ontology/domains/_index.yaml` → if missing, output `"Ontology is not initialized."` and **exit immediately**.
+Glob `ontology/domains/_index.yaml` → if missing, output `"Ontology is not initialized."` and **exit immediately**.
 
 ### Step 1-B: Parse arguments
 
@@ -30,7 +30,7 @@ If arguments were provided, parse them to set an optional domain filter:
 
 ### Step 2: Read `_index.yaml`
 
-Use the Read tool to read `.ontology/domains/_index.yaml`.
+Use the Read tool to read `ontology/domains/_index.yaml`.
 
 If the `domains` array is empty or the file is missing:
 
@@ -45,9 +45,9 @@ Output and exit.
 Iterate over the `domains` array in `_index.yaml` and read each domain's type data.
 
 All domains use the `directory` format:
-- Glob `.ontology/domains/<directory>/objects/*.yaml` → read each → collect into `object_types[]`
-- Glob `.ontology/domains/<directory>/links/*.yaml` → read each → collect into `link_types[]`
-- Glob `.ontology/domains/<directory>/actions/*.yaml` → read each → collect into `action_types[]`
+- Glob `ontology/domains/<directory>/objects/*.yaml` → read each → collect into `object_types[]`
+- Glob `ontology/domains/<directory>/links/*.yaml` → read each → collect into `link_types[]`
+- Glob `ontology/domains/<directory>/actions/*.yaml` → read each → collect into `action_types[]`
 Each file is a single entity definition with no wrapper key.
 
 If a domain file cannot be read, add the following to the error list and skip validation for that domain:
@@ -266,7 +266,7 @@ If `required` is present with an invalid value, add an error:
 **For `directory`-format domains, render entity names as file links in error messages:**
 
 ```
-[<domain_name>] [<TypeName>](.ontology/domains/<directory>/<subdir>/<filename>.yaml): <error_message>
+[<domain_name>] [<TypeName>](ontology/domains/<directory>/<subdir>/<filename>.yaml): <error_message>
 ```
 
 Where:

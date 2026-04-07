@@ -401,8 +401,8 @@ links/<name>.yaml:
   cardinality: <cardinality>
   description: "<description>"   # only if provided
   refs:
-    - "[[<ObjectType_from>]]"
-    - "[[<ObjectType_to>]]"
+    - "[[ontology/domains/<from_directory>/objects/<FromType>|<FromType>]]"
+    - "[[ontology/domains/<to_directory>/objects/<ToType>|<ToType>]]"
 
 actions/<name>.yaml:
   name: <name>
@@ -410,7 +410,7 @@ actions/<name>.yaml:
   target: <ObjectType>
   trigger: <trigger>
   refs:
-    - "[[<ObjectType>]]"
+    - "[[ontology/domains/<target_directory>/objects/<TargetType>|<TargetType>]]"
 
 Write this as-is? (y / n / edit)
 ```
@@ -465,8 +465,8 @@ to: Order
 cardinality: one_to_many
 description: "<description>"   # only if provided
 refs:
-  - "[[User]]"
-  - "[[Order]]"
+  - "[[ontology/domains/ecommerce/objects/User|User]]"
+  - "[[ontology/domains/ecommerce/objects/Order|Order]]"
 ```
 
 ```yaml
@@ -476,7 +476,7 @@ description: "Send a welcome email to a newly registered user"
 target: User
 trigger: object_created
 refs:
-  - "[[User]]"
+  - "[[ontology/domains/ecommerce/objects/User|User]]"
 ```
 
 Always update `last_modified` in `_index.yaml` after each domain.

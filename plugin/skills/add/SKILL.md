@@ -601,6 +601,17 @@ properties:
 **Link Type:**
 Check that `ontology/domains/<directory>/links/<name>.yaml` does not already exist.
 If it exists → warn and ask to overwrite (same as Object Type).
+
+Before writing, resolve the domain directory for `from` and `to` Object Types:
+- Search `ontology/domains/_index.yaml` for all domains, then check each domain's `objects/` directory for a file matching `<ObjectType>.yaml`.
+- If found in the **current domain** → path is `ontology/domains/<current_directory>/objects/<Name>`
+- If found in a **different domain** → path is `ontology/domains/<other_directory>/objects/<Name>`. Also check that the other domain's `name` appears in the current domain's `dependency_direction` list in `_index.yaml`. If it does not, emit an error before writing:
+  ```
+  ✗ Cross-domain reference to '<ObjectType>' (domain: '<other_domain>') is not declared in dependency_direction for '<current_domain>'.
+    Add '<other_domain>' to the dependency_direction list in _index.yaml first.
+  ```
+- If not found in any domain → use the current domain path as a best-effort fallback and emit a warning.
+
 Write:
 ```yaml
 name: <name>
@@ -609,13 +620,16 @@ to: <ObjectType>
 cardinality: <cardinality>
 description: "<description>"  # only if provided
 refs:
-  - "[[<ObjectType_from>]]"
-  - "[[<ObjectType_to>]]"
+  - "[[ontology/domains/<from_directory>/objects/<FromType>|<FromType>]]"
+  - "[[ontology/domains/<to_directory>/objects/<ToType>|<ToType>]]"
 ```
 
 **Action Type:**
 Check that `ontology/domains/<directory>/actions/<name>.yaml` does not already exist.
 If it exists → warn and ask to overwrite.
+
+Before writing, resolve the domain directory for the `target` Object Type using the same lookup logic as Link Type above. Apply the same cross-domain `dependency_direction` check and error if undeclared.
+
 Write:
 ```yaml
 name: <name>
@@ -631,7 +645,7 @@ parameters:       # only when at least one parameter
     type: <type>
     required: false  # only when false; omit when true
 refs:
-  - "[[<ObjectType>]]"
+  - "[[ontology/domains/<target_directory>/objects/<TargetType>|<TargetType>]]"
 ```
 
 Update `last_modified` in `_index.yaml` to today's date after writing.

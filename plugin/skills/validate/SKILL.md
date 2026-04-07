@@ -256,6 +256,39 @@ If `required` is present with an invalid value, add an error:
   → required: invalid value '<value>'. Allowed: true, false. Omit this field when the parameter is required (true is the default).
 ```
 
+#### Cross-domain refs validation
+
+After validating all Link Types and Action Types, perform a cross-domain `refs` integrity check.
+
+For each Link Type and Action Type that has a `refs` field:
+
+1. **Parse each ref entry.** Each entry must match the pattern:
+   ```
+   [[ontology/domains/<directory>/objects/<Name>|<Name>]]
+   ```
+   If an entry does **not** match this pattern, add an error:
+   ```
+   [<domain_name>] <Type Kind> '<name>'
+     → refs: entry '<value>' is not a valid full-path Obsidian link.
+       Expected format: [[ontology/domains/<directory>/objects/<Name>|<Name>]]
+   ```
+
+2. **Check that the referenced file exists.** Glob `ontology/domains/<directory>/objects/<Name>.yaml`. If the file does not exist, add an error:
+   ```
+   [<domain_name>] <Type Kind> '<name>'
+     → refs: "[[ontology/domains/<directory>/objects/<Name>|<Name>]]" — file not found.
+       Verify the Object Type name and domain directory are correct.
+   ```
+
+3. **Check cross-domain dependency declaration.** If `<directory>` differs from the current domain's `directory`:
+   - Look up the current domain's entry in `_index.yaml` and read its `dependency_direction` list.
+   - If the referenced domain's **name** is not present in `dependency_direction`, add an error:
+     ```
+     [<domain_name>] <Type Kind> '<name>'
+       → refs: cross-domain reference to '<ReferencedObjectType>' in domain '<referenced_domain>' is not declared.
+         Add '<referenced_domain>' to dependency_direction in _index.yaml for domain '<domain_name>'.
+     ```
+
 **Error message format:**
 
 ```

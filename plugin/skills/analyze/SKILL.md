@@ -534,9 +534,11 @@ to: <ObjectType>
 cardinality: <cardinality>
 description: "<description>"  # only if provided
 refs:
-  - "[[<ObjectType_from>]]"
-  - "[[<ObjectType_to>]]"
+  - "[[ontology/domains/<from_directory>/objects/<FromType>|<FromType>]]"
+  - "[[ontology/domains/<to_directory>/objects/<ToType>|<ToType>]]"
 ```
+
+Resolve `<from_directory>` and `<to_directory>` by looking up which domain each Object Type belongs to (already loaded in Step 3). If an Object Type belongs to a different domain, verify that domain appears in the current domain's `dependency_direction`. If it does not, flag it as a cross-domain integrity error and surface it in the Step 11 completion message.
 
 **Action Types:** For each confirmed Action Type, use the Write tool to create:
 `ontology/domains/<domain_name>/actions/<name>.yaml`
@@ -556,8 +558,10 @@ parameters:                    # only when at least one parameter
     type: <type>
     required: false            # only when false; omit when true
 refs:
-  - "[[<ObjectType>]]"
+  - "[[ontology/domains/<target_directory>/objects/<TargetType>|<TargetType>]]"
 ```
+
+Resolve `<target_directory>` using the same domain lookup. Apply the same cross-domain `dependency_direction` check.
 
 **Update `_index.yaml`:** Use Edit to add the new domain entry with `directory:` field (not `path:`):
 ```yaml

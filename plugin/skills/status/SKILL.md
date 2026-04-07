@@ -98,10 +98,15 @@ Domains:
 Total domains: <N> | Object Types: <N> | Link Types: <N> | Action Types: <N>
 Details: /ontologian-visualize | Validate all: /ontologian-validate
 
+Not sure where to start?
+  → Have requirements text?            /ontologian-analyze  (fastest)
+  → Adding one type to existing domain? /ontologian-add
+  → New domain, guided interview?       /ontologian-consult  (most thorough)
+
 Available commands:
-  /ontologian-add       — Add a new type
-  /ontologian-analyze   — Derive ontology from business requirements
-  /ontologian-consult   — Start a guided ontology consulting session
+  /ontologian-add       — Add a single type interactively
+  /ontologian-analyze   — Paste requirements text → auto-derive types
+  /ontologian-consult   — Full guided session with discovery interview
   /ontologian-search    — Search by keyword
   /ontologian-validate  — Validate integrity
   /ontologian-sync      — Sync to global store

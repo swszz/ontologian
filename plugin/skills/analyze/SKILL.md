@@ -281,7 +281,18 @@ Display rules:
 
 After output:
 - **0 uncertain items** → `"All items are clear. Proceeding to domain placement."` → skip to Step 7
-- **1 or more uncertain items** → `"There are N uncertain items. Let's go through them one by one."` → proceed to Step 6
+- **1–4 uncertain items** → `"There are N uncertain items. Let's go through them one by one."` → proceed to Step 6
+- **5 or more uncertain items** → output first:
+  ```
+  There are N uncertain items.
+
+  (A) Resolve them one by one
+  (B) Write confirmed items now, add the rest later with /ontologian-add
+
+  Choose (A/B):
+  ```
+  - `A` → proceed to Step 6
+  - `B` → store uncertain items as `pending_items[]`, skip to Step 7 with only `confidence: high` items
 
 ---
 
@@ -626,6 +637,11 @@ After all writes, always update the domain's `last_modified` in `_index.yaml` to
   → ontology/domains/<domain_name>/actions/  (<n> Action Type files)
 
 [i] Tip: Run /ontologian-validate to check for schema issues, or /ontologian-visualize to see your new types in context.
+```
+
+If `pending_items[]` is non-empty, append:
+```
+[i] N item(s) were skipped. Use /ontologian-add to add them when ready.
 ```
 
 **Edge case B (nothing added):**

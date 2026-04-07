@@ -73,8 +73,14 @@ No domains registered. Enter a name for the new domain:
 
 Wait for user input.
 
-- **Number selection** (existing domain): Store that domain's `name` and `directory` fields in memory. Proceed to Step 4.
-- **"N" or new domain text**: Prompt for a domain name (lowercase letters, hyphens, and underscores allowed), then ask the following questions **one at a time**:
+- **Number selection** (existing domain): Store that domain's `name`, `directory`, and `stability` fields in memory. Then glob `ontology/domains/<directory>/objects/*.md` and extract file base names (without `.md`) as `known_objects[]`.
+  If `stability` is `stable`, warn before proceeding:
+  ```
+  ⚠ Domain '<name>' is marked stable. Changes should be reviewed by the domain owner before merging.
+  Continue? (y/n):
+  ```
+  If `n` → exit. If `y` → proceed to Step 4.
+- **"N" or new domain text**: Initialize `known_objects: []` (empty — new domain has no objects yet). Prompt for a domain name (lowercase letters, hyphens, and underscores allowed), then ask the following questions **one at a time**:
 
   ```
   Enter a description for the domain (optional, press Enter to skip):
@@ -275,11 +281,16 @@ If this is an existing domain, show the known Object Type names from that domain
    ```
    Enter the from Object Type (e.g. User):
    ```
+   After input, check if the name exists in `known_objects[]` (loaded in Step 3). If not found, also check other domains' `_index.yaml` entries via glob. If not found anywhere, warn:
+   ```
+   ⚠ '<name>' not found in any registered domain. Proceeding, but /ontologian-validate will flag this.
+   ```
 
 3. **to** (target Object Type):
    ```
    Enter the to Object Type (e.g. Order):
    ```
+   Apply the same existence check as `from` above (using `known_objects[]`).
 
 4. **cardinality**:
    ```
@@ -294,7 +305,7 @@ If this is an existing domain, show the known Object Type names from that domain
 
 5. **Description**:
    ```
-   Enter a description (optional, press Enter to skip):
+   Enter a description (recommended — omitting will cause a validation WARNING per Palantir Principle 6):
    ```
 
 Store as `new_entry`:
@@ -349,6 +360,12 @@ Ask the following questions **one at a time** in order.
    Enter a number:
    ```
 
+   If `manual` is selected, output before proceeding to parameters:
+   ```
+   [i] Manual triggers should declare at least one parameter to document required inputs.
+       (e.g. reason: string, actor_id: string)
+   ```
+
    If `object_updated` is selected, ask for trigger_condition:
    ```
    Which field change should trigger this action? (e.g. status, press Enter to skip):
@@ -367,7 +384,11 @@ Ask the following questions **one at a time** in order.
    ```
    If `field` is still empty after the second attempt, discard `trigger_condition` entirely — do not write a `trigger_condition` block with only `from`/`to` and no `field`.
 
-   If `field` is provided (with or without `from`/`to`), store as `trigger_condition: {field, from, to}` (omit `from`/`to` keys if not set).
+   If `field` is provided, verify it exists as a property of the `target` Object Type (look up `known_objects[]` and read the target's file). If not found, warn:
+   ```
+   ⚠ '<field>' is not a known property of '<target>'. /ontologian-validate will flag this.
+   ```
+   Store as `trigger_condition: {field, from, to}` (omit `from`/`to` keys if not set).
 
 5. **Collect parameters** (repeat the following prompt):
 

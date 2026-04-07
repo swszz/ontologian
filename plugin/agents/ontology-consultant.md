@@ -80,8 +80,7 @@ than anything the user would have requested directly.
 3. **Every meaningful operation is an Action** — the "verbs" of the domain. An ontology without
    Actions is a data model. An ontology with Actions is a domain model.
 
-4. **Domain boundaries are enforced** — no Link Type crosses domain boundaries.
-   Cross-domain integration uses reference IDs or a dedicated integration domain.
+4. **Domain boundaries require explicit declaration** — Link Types may reference Objects in another domain only when `dependency_direction` is declared in `_index.yaml` and the Link includes a `description` explaining why direct linking is preferred over a reference ID property. Undeclared cross-domain Links are a governance violation.
 
 5. **Governance is a first-class design concern** — every domain has a declared owner,
    stability rating, and version. Stable domains require review before change.
@@ -226,17 +225,17 @@ candidate_actions: []   # { name, description, trigger, target, parameters[], co
 uncertain_items: []
 ```
 
-Apply extraction rules (same as the `analyze` skill Steps 4-A through 4-E):
-- **4-A**: Extract Object Type candidates — nouns with independent lifecycle and attributes.
-  PascalCase names. Exclude FK properties. Default property type to `string` if unclear.
-- **4-B**: Extract Link Type candidates — snake_case pure verbs. Direction: owner→owned preferred.
-  Check cardinality. Flag many_to_many that needs an intermediate Object.
-- **4-C**: Extract Action Type candidates — snake_case. Set `target` to the Object whose field triggers
-  the action (not the side-effect Object). Check for circular trigger patterns.
-- **4-D**: Detect conflicts with existing ontology (exact name, prefix/suffix containment, semantic similarity).
-- **4-E**: Build uncertain_items list (concept_split, existing_conflict, missing_primary_key,
-  ambiguous_cardinality, action_target_unclear, ambiguous_trigger_condition, missing_enum_values,
-  missing_computed_expression).
+Apply the full extraction rules (same as `analyze` skill Steps 4-A through 4-E). Before proceeding to Step 10, verify each of the following — do not skip any:
+
+**Extraction checklist (must complete all):**
+- [ ] Object names are PascalCase; no FK properties (relationships expressed as Links)
+- [ ] Status-pattern fields have "Allowed values: X, Y, Z" in description
+- [ ] Link names are pure present-tense active verbs; no passive voice, no noun suffixes
+- [ ] For `many_to_many` with relationship-level attributes → create intermediate Object
+- [ ] Side-effect Objects created by Actions have a reverse Link back to trigger Object
+- [ ] For `object_updated` Actions: `target` = Object whose field changes, not the side-effect Object
+- [ ] `trigger_condition.field` is a declared property of `target`; circular triggers flagged
+- [ ] All 8 `uncertain_items` types populated: `concept_split`, `existing_conflict`, `missing_primary_key`, `ambiguous_cardinality`, `action_target_unclear`, `ambiguous_trigger_condition`, `missing_enum_values`, `missing_computed_expression`
 
 **Step 10: Semantic entity audit**
 
@@ -248,15 +247,7 @@ Flag and reject:
 - Implementation artifacts (e.g., `PaymentGatewayResponse`, `WebhookPayload`) → reject with explanation
 - Duplicate modeling (e.g., `FixedDeposit` alongside `Account.type = fixed_deposit`) → flag as `concept_split`
 
-**Step 11: Action completeness audit**
-
-For each Object Type that has a `status` property:
-1. Enumerate all status values from the property description.
-2. Map the state machine: which status transitions are valid?
-3. Check that each transition edge has a corresponding Action Type.
-4. Add missing transitions to `uncertain_items` as `ambiguous_trigger_condition`.
-
-**Step 12: Cross-domain reference audit**
+**Step 11: Cross-domain reference audit**
 
 Scan all Link Types. If `from` and `to` belong to different proposed domains:
 ```
@@ -294,11 +285,11 @@ Add them? (y/n/partial)
 
 **Pattern 2 — State Machine Audit**
 
-For each Object Type with a `status` property (confirmed from Pattern 1):
-1. Draw the state machine based on the allowed values.
-2. Identify all valid transitions.
-3. Check that each transition has a corresponding Action Type.
-4. Propose missing Actions.
+Run after Pattern 1 completes (so newly added `status` properties are included). For each Object Type with a `status` property:
+1. Enumerate all allowed values from the property description ("Allowed values: X, Y, Z").
+2. Map the state machine: which transitions are valid business operations?
+3. Check that each transition edge has a corresponding Action Type.
+4. Propose missing Actions for uncovered transitions.
 
 ```
 [<ObjectType>] State transition check:
@@ -529,9 +520,9 @@ ACTIONS
 
 **File link rendering in CONSULT_REPORT.md:**
 All entity name references use markdown file links:
-- Object Types: `[Name](ontology/domains/<domain>/objects/Name.yaml)`
-- Link Types: `[name](ontology/domains/<domain>/links/name.yaml)`
-- Action Types: `[name](ontology/domains/<domain>/actions/name.yaml)`
+- Object Types: `[Name](ontology/domains/<domain>/objects/Name.md)`
+- Link Types: `[name](ontology/domains/<domain>/links/name.md)`
+- Action Types: `[name](ontology/domains/<domain>/actions/name.md)`
 Apply this format wherever entity names appear in the report body.
 
 Write `ontology/CONSULT_REPORT.md`:

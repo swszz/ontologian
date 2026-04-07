@@ -101,7 +101,7 @@ For each item:
 After validating `name` is present, check if the name ends with any of these suffixes (case-insensitive):
 `DTO`, `Entity`, `Repository`, `Manager`, `Service`, `Handler`, `Base`, `Abstract`, `Util`, `Helper`, `Factory`, `Controller`
 
-If matched, add a MAJOR warning:
+If matched, add a WARNING:
 ```
 ⚠ [<domain_name>] Object Type '<name>'
   → name: '<name>' contains an implementation artifact suffix ('<suffix>').
@@ -115,10 +115,10 @@ If a `properties` array exists, validate each property:
 |-------|------|
 | `name` | Required |
 | `type` | Required. Allowed values: `string`, `int`, `float`, `boolean`, `date`, `datetime`. `integer` is accepted as an alias for `int` (not an error). |
-| `description` | Optional. If absent, emit a warning (not an error): `[ObjectType.property] No description. Adding one helps preserve field intent.` |
-| `computed` | Optional. If `true`, check for `expression`. If absent, emit a warning: `Computed property '<name>' has no expression.` |
+| `description` | Optional. If absent, emit a **[HINT]**: `[ObjectType.property] No description. Adding one helps preserve field intent.` |
+| `computed` | Optional. If `true`, check for `expression`. If absent, emit a **[HINT]**: `Computed property '<name>' has no expression.` |
 
-**Property type heuristic checks (add as MAJOR warnings):**
+**Property type heuristic checks (add as WARNINGs):**
 
 After validating required fields, apply these name-pattern checks:
 
@@ -135,35 +135,35 @@ Warning format:
     Change to <expected_type> if this field holds a real <date/boolean/numeric> value.
 ```
 
-**Enum documentation check (status-pattern fields — add as MAJOR warnings):**
+**Enum documentation check (status-pattern fields — add as WARNINGs):**
 
 For each property where:
 - `type` is `string` AND
 - `name` exactly matches any of: `status`, `state`, `type`, `kind`, `mode`, `stage`, `phase`, `category`, `level`
   OR `name` ends with `_status`, `_state`, `_type`, `_kind`, `_mode`, `_stage`, `_phase`, `_category`, `_level` (case-insensitive, e.g. `order_status`, `account_type`, `delivery_stage`)
 
-Check if `description` contains the substring `"Allowed values:"`. If not, add a MAJOR warning:
+Check if `description` contains the substring `"Allowed values:"`. If not, add a WARNING:
 ```
 ⚠ [<domain_name>] Object Type '<name>' > property '<prop_name>'
   → description: status-pattern field missing allowed values documentation.
     Add 'Allowed values: X, Y, Z' to the description (e.g. "Allowed values: pending, active, cancelled").
 ```
 
-**Empty properties check (add as MAJOR warning):**
+**Empty properties check (add as WARNING):**
 
-If `properties` is absent or an empty array, add a MAJOR warning:
+If `properties` is absent or an empty array, add a WARNING:
 ```
 ⚠ [<domain_name>] Object Type '<name>'
   → properties: no properties defined. Object Types should declare at least one property
     (typically an identifier). Add properties or verify this is intentional.
 ```
 
-**Primary key completeness check (add as MAJOR warning / error):**
+**Primary key completeness check (add as WARNING / error):**
 
 After validating all properties of an Object Type (skip if `properties` is absent or an empty array — covered by the empty properties check above):
 
 - Count properties where `primary: true`. Call this `pk_count`.
-- If `pk_count == 0`: add a MAJOR warning:
+- If `pk_count == 0`: add a WARNING:
   ```
   ⚠ [<domain_name>] Object Type '<name>'
     → properties: no primary key defined. Add primary: true to the identifier property
@@ -187,18 +187,18 @@ For each item:
 | `to` | Required |
 | `cardinality` | Required. Allowed values: `one_to_one`, `one_to_many`, `many_to_many`, `many_to_one` |
 
-**Link Type missing `description` (SUGGESTION):**
+**Link Type missing `description` (WARNING):**
 
-If a Link Type has no `description` field (absent or empty string), add a SUGGESTION warning:
+If a Link Type has no `description` field (absent or empty string), add a WARNING:
 ```
 ⚠ [<domain_name>] Link Type '<name>'
-  → description: not set. Adding a description clarifies the relationship's intent and directionality.
+  → description: not set. Every type must have a description for discoverability (Palantir Principle 6).
     Example: "A User places an Order" or "An Order contains one or more Products"
 ```
 
-**`many_to_many` cardinality advisory (SUGGESTION):**
+**`many_to_many` cardinality advisory (HINT):**
 
-If `cardinality` is `many_to_many`, add a SUGGESTION warning:
+If `cardinality` is `many_to_many`, add a HINT:
 ```
 ⚠ [<domain_name>] Link Type '<name>' (<from> → <to>)
   → cardinality: many_to_many links often indicate a missing intermediate Object Type.
@@ -219,9 +219,9 @@ For each item:
 | `trigger` | Required. Allowed values: `object_created`, `object_updated`, `object_deleted`, `manual` |
 | `target` | Required |
 
-**`manual` trigger with no parameters (MAJOR warning):**
+**`manual` trigger with no parameters (WARNING):**
 
-If `trigger` is `manual` and `parameters` is absent or an empty array, add a MAJOR warning:
+If `trigger` is `manual` and `parameters` is absent or an empty array, add a WARNING:
 ```
 ⚠ [<domain_name>] Action Type '<name>'
   → trigger: manual actions should declare at least one parameter to document required inputs.
@@ -231,7 +231,7 @@ If `trigger` is `manual` and `parameters` is absent or an empty array, add a MAJ
 
 **`object_updated` without `trigger_condition` check:**
 
-If `trigger` is `object_updated` and no `trigger_condition` block is present, add a MAJOR warning:
+If `trigger` is `object_updated` and no `trigger_condition` block is present, add a WARNING:
 ```
 ⚠ [<domain_name>] Action Type '<name>'
   → trigger: object_updated without trigger_condition fires on every property change.
@@ -359,7 +359,7 @@ For each Link Type `from`/`to` and Action Type `target`, first check whether the
 
 If not found in the current domain, check all other registered domains:
 - If the type is found in another domain (`<other_domain>`):
-  - **If the current domain's `_index.yaml` entry declares `dependency_direction` that includes `<other_domain>`**: emit a MAJOR warning (not an error):
+  - **If the current domain's `_index.yaml` entry declares `dependency_direction` that includes `<other_domain>`**: emit a WARNING (not an error):
     ```
     ⚠ [<domain_name>] <TypeKind> '<name>'
       → <field>: '<value>' is defined in domain '<other_domain>', not '<domain_name>'.
@@ -407,9 +407,9 @@ For each domain entry in `_index.yaml`, check for governance metadata:
 
 | Field | Severity if missing | Warning text |
 |-------|--------------------|--------------------------------------------|
-| `domain_owner` | MAJOR | `Domain '<name>' has no domain_owner. Add domain_owner: <team-name> to the _index.yaml entry.` |
-| `stability` | MAJOR | `Domain '<name>' has no stability. Add stability: stable\|experimental\|deprecated to the _index.yaml entry.` |
-| `semantic_version` | MINOR | `Domain '<name>' has no semantic_version. Add semantic_version: 1.0.0 to the _index.yaml entry.` |
+| `domain_owner` | WARNING | `Domain '<name>' has no domain_owner. Add domain_owner: <team-name> to the _index.yaml entry.` |
+| `stability` | WARNING | `Domain '<name>' has no stability. Add stability: stable\|experimental\|deprecated to the _index.yaml entry.` |
+| `semantic_version` | HINT | `Domain '<name>' has no semantic_version. Add semantic_version: 1.0.0 to the _index.yaml entry.` |
 | `dependency_direction` | — | Optional field. No warning if absent. Validated separately below. |
 
 Allowed values for `stability`: `stable`, `experimental`, `deprecated`. If set to another value, add an error:
@@ -422,7 +422,7 @@ Emit all governance metadata issues as warnings (⚠), not errors. Include them 
 
 **`dependency_direction` domain existence check:**
 
-If a domain entry declares `dependency_direction: [<name1>, <name2>, ...]`, verify that each referenced name appears in the `domains` array of `_index.yaml`. If a referenced domain is not found, emit a MAJOR warning:
+If a domain entry declares `dependency_direction: [<name1>, <name2>, ...]`, verify that each referenced name appears in the `domains` array of `_index.yaml`. If a referenced domain is not found, emit a WARNING:
 ```
 ⚠ [<domain_name>] _index.yaml
   → dependency_direction: '<ref_name>' does not match any registered domain.
@@ -438,7 +438,7 @@ Build a list of all `object_created` actions: `{ domain, action_name, target }`.
 For each pair of `object_created` actions (A, B) in the **same domain** where A ≠ B:
 - If `A.target == B.target`, these two actions both fire when the same Object Type is created.
 - This is a potential infinite loop if either action creates another instance of the same type as its side effect.
-- Add a MAJOR warning for each such pair:
+- Add a WARNING for each such pair:
   ```
   ⚠ [<domain_name>] Action Types '<A.action_name>' and '<B.action_name>'
     → Both use trigger: object_created with the same target '<target>'.
@@ -477,25 +477,25 @@ If duplicates found, add an error:
 **No errors but warnings exist:**
 
 Count warnings by severity before rendering:
-- MAJOR warnings: governance issues (missing domain_owner, stability, etc.), implementation artifact names, missing primary keys, type heuristic mismatches, trigger_condition issues
-- SUGGESTION/MINOR warnings: missing descriptions, many_to_many advisories, computed property without expression
+- WARNING: governance issues (missing domain_owner, stability, etc.), implementation artifact names, missing primary keys, type heuristic mismatches, trigger_condition issues, missing Link description
+- HINT: many_to_many advisories, computed property without expression, missing property descriptions
 
 ```
-✓ Validation passed — <MAJOR> MAJOR warning(s), <MINOR> suggestion(s)
+✓ Validation passed — <W> warning(s), <H> hint(s)
 
 ⚠ <warning1>
 ⚠ <warning2>
 ...
 ```
 
-If there are zero MAJOR warnings, omit the MAJOR count and render as:
+If there are zero warnings, omit the warning count and render as:
 ```
-✓ Validation passed — <W> suggestion(s)
+✓ Validation passed — <H> hint(s)
 ```
 
-If there are zero suggestions (only MAJOR warnings):
+If there are zero hints (only warnings):
 ```
-✓ Validation passed — <MAJOR> MAJOR warning(s)
+✓ Validation passed — <W> warning(s)
 ```
 
 `N` is the total count across all domains.

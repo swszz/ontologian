@@ -173,8 +173,8 @@ properties:
 ```markdown
 ---
 name: places
-from: "[[ontology/domains/ecommerce/objects/User|User]]"
-to: "[[ontology/domains/ecommerce/objects/Order|Order]]"
+from: "[[../objects/User|User]]"
+to: "[[../objects/Order|Order]]"
 cardinality: one_to_many
 description: "A user places one or more orders"
 ---
@@ -185,7 +185,7 @@ description: "A user places one or more orders"
 ---
 name: send_welcome_email
 description: "Send a welcome email to a newly registered user"
-target: "[[ontology/domains/ecommerce/objects/User|User]]"
+target: "[[../objects/User|User]]"
 trigger: object_created
 parameters:
   - name: email_template

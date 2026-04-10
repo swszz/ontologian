@@ -627,24 +627,27 @@ If it exists → warn and ask to overwrite (same as Object Type).
 
 Before writing, resolve the domain directory for `from` and `to` Object Types:
 - Search `ontology/domains/_index.yaml` for all domains, then check each domain's `objects/` directory for a file matching `<ObjectType>.md`.
-- If found in the **current domain** → path is `ontology/domains/<current_directory>/objects/<Name>`
-- If found in a **different domain** → path is `ontology/domains/<other_directory>/objects/<Name>`. Also check that the other domain's `name` appears in the current domain's `dependency_direction` list in `_index.yaml`. If it does not, emit an error before writing:
+- If found in the **current domain** → use relative path `../objects/<Name>`
+- If found in a **different domain** (`<other_directory>`) → use relative path `../../<other_directory>/objects/<Name>`. Also check that the other domain's `name` appears in the current domain's `dependency_direction` list in `_index.yaml`. If it does not, emit an error before writing:
   ```
   ✗ Cross-domain reference to '<ObjectType>' (domain: '<other_domain>') is not declared in dependency_direction for '<current_domain>'.
     Add '<other_domain>' to the dependency_direction list in _index.yaml first.
   ```
-- If not found in any domain → use the current domain path as a best-effort fallback and emit a warning.
+- If not found in any domain → use `../objects/<Name>` as a best-effort fallback and emit a warning.
 
 Write:
 ```markdown
 ---
 name: <name>
-from: "[[ontology/domains/<from_directory>/objects/<FromType>|<FromType>]]"
-to: "[[ontology/domains/<to_directory>/objects/<ToType>|<ToType>]]"
+from: "[[../objects/<FromType>|<FromType>]]"          # same-domain
+from: "[[../../<from_directory>/objects/<FromType>|<FromType>]]"  # cross-domain
+to: "[[../objects/<ToType>|<ToType>]]"                # same-domain
+to: "[[../../<to_directory>/objects/<ToType>|<ToType>]]"          # cross-domain
 cardinality: <cardinality>
 description: "<description>"  # only if provided
 ---
 ```
+(Use the appropriate relative path form — only one `from` and one `to` line in the actual file.)
 
 **Action Type:**
 Check that `ontology/domains/<directory>/actions/<name>.md` does not already exist.
@@ -657,7 +660,8 @@ Write:
 ---
 name: <name>
 description: "<description>"
-target: "[[ontology/domains/<target_directory>/objects/<TargetType>|<TargetType>]]"
+target: "[[../objects/<TargetType>|<TargetType>]]"                    # same-domain
+target: "[[../../<target_directory>/objects/<TargetType>|<TargetType>]]"  # cross-domain
 trigger: <trigger>
 trigger_condition:  # only when object_updated and field provided
   field: <field>
@@ -669,6 +673,7 @@ parameters:       # only when at least one parameter
     required: false  # only when false; omit when true
 ---
 ```
+(Use the appropriate relative path form — only one `target` line in the actual file.)
 
 Update `last_modified` in `_index.yaml` to today's date after writing.
 

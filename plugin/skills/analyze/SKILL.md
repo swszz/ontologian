@@ -543,14 +543,19 @@ File content:
 ```markdown
 ---
 name: <name>
-from: "[[ontology/domains/<from_directory>/objects/<FromType>|<FromType>]]"
-to: "[[ontology/domains/<to_directory>/objects/<ToType>|<ToType>]]"
+from: "[[../objects/<FromType>|<FromType>]]"          # same-domain
+from: "[[../../<from_directory>/objects/<FromType>|<FromType>]]"  # cross-domain
+to: "[[../objects/<ToType>|<ToType>]]"                # same-domain
+to: "[[../../<to_directory>/objects/<ToType>|<ToType>]]"          # cross-domain
 cardinality: <cardinality>
 description: "<description>"  # only if provided
 ---
 ```
+(Use the appropriate relative path form — only one `from` and one `to` line in the actual file.)
 
-Resolve `<from_directory>` and `<to_directory>` by looking up which domain each Object Type belongs to (already loaded in Step 3). If an Object Type belongs to a different domain, verify that domain appears in the current domain's `dependency_direction`. If it does not, flag it as a cross-domain integrity error and surface it in the Step 11 completion message.
+Resolve which domain each Object Type belongs to (already loaded in Step 3):
+- Same domain as the Link → use `../objects/<Name>`
+- Different domain (`<other_directory>`) → use `../../<other_directory>/objects/<Name>`. Verify that domain appears in the current domain's `dependency_direction`. If it does not, flag it as a cross-domain integrity error and surface it in the Step 11 completion message.
 
 **Action Types:** For each confirmed Action Type, use the Write tool to create:
 `ontology/domains/<domain_name>/actions/<name>.md`
@@ -560,7 +565,8 @@ File content:
 ---
 name: <name>
 description: "<description>"  # only if provided
-target: "[[ontology/domains/<target_directory>/objects/<TargetType>|<TargetType>]]"
+target: "[[../objects/<TargetType>|<TargetType>]]"                    # same-domain
+target: "[[../../<target_directory>/objects/<TargetType>|<TargetType>]]"  # cross-domain
 trigger: <trigger>
 trigger_condition:             # only when trigger=object_updated and field provided
   field: <field>
@@ -572,8 +578,11 @@ parameters:                    # only when at least one parameter
     required: false            # only when false; omit when true
 ---
 ```
+(Use the appropriate relative path form — only one `target` line in the actual file.)
 
-Resolve `<target_directory>` using the same domain lookup. Apply the same cross-domain `dependency_direction` check.
+Resolve which domain the `target` Object Type belongs to using the same domain lookup:
+- Same domain → `../objects/<Name>`
+- Different domain (`<other_directory>`) → `../../<other_directory>/objects/<Name>`. Apply the same cross-domain `dependency_direction` check.
 
 **Update `_index.yaml`:** Use Edit to add the new domain entry with `directory:` field (not `path:`):
 ```yaml

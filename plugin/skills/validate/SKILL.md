@@ -72,16 +72,19 @@ domain_data[domain_name] = {
 
 Each entity file is a `.md` file with YAML frontmatter. Parse only the frontmatter (content between the first and second `---` delimiters) as YAML.
 
-**Wiki link field extraction:** The `from`, `to`, and `target` fields may contain either a plain Object Type name or a full-path Obsidian wiki link:
+**Wiki link field extraction:** The `from`, `to`, and `target` fields may contain either a plain Object Type name or a relative-path Obsidian wiki link:
 - Plain: `from: Shipment`
-- Wiki link: `from: "[[ontology/domains/logistics/objects/Shipment|Shipment]]"`
+- Same-domain wiki link: `from: "[[../objects/Shipment|Shipment]]"`
+- Cross-domain wiki link: `from: "[[../../ecommerce/objects/Order|Order]]"`
 
-When reading these fields, extract the Object Type name as follows:
-- If the value matches `[[<path>|<Name>]]` → use `<Name>` as the type name, `<path>` as the file path
-- If the value matches `[[<Name>]]` → use `<Name>` as both
+When reading these fields, extract the Object Type name and resolve the path as follows:
+- If the value matches `[[<path>|<Name>]]` → use `<Name>` as the type name. Resolve `<path>` relative to the file's location (`ontology/domains/<domain>/<subdir>/`) to get the normalized file path.
+  - `../objects/<Name>` → resolves to `ontology/domains/<current_domain>/objects/<Name>`
+  - `../../<other_domain>/objects/<Name>` → resolves to `ontology/domains/<other_domain>/objects/<Name>`
+- If the value matches `[[<Name>]]` → use `<Name>` as both the name and look it up in the current domain
 - If the value is a plain string → use it directly
 
-Store both the extracted name and the full wiki link string (if present) for use in validation steps.
+Store both the extracted name and the resolved normalized path (if present) for use in validation steps.
 
 ### Step 4: Schema validation
 
@@ -279,25 +282,26 @@ For each Link Type, check the `from` and `to` fields. For each Action Type, chec
 
 For each wiki link value found in `from`, `to`, or `target`:
 
-1. **Validate the link format.** The value must match:
-   ```
-   [[ontology/domains/<directory>/objects/<Name>|<Name>]]
-   ```
-   If it does **not** match this pattern, add an error:
+1. **Validate the link format.** The value must match one of:
+   - Same-domain: `[[../objects/<Name>|<Name>]]`
+   - Cross-domain: `[[../../<directory>/objects/<Name>|<Name>]]`
+
+   If it does **not** match either pattern, add an error:
    ```
    [<domain_name>] <Type Kind> '<name>'
-     → <field>: '<value>' is not a valid full-path Obsidian wiki link.
-       Expected format: [[ontology/domains/<directory>/objects/<Name>|<Name>]]
+     → <field>: '<value>' is not a valid relative-path Obsidian wiki link.
+       Expected format: [[../objects/<Name>|<Name>]] (same-domain)
+                     or [[../../<directory>/objects/<Name>|<Name>]] (cross-domain)
    ```
 
-2. **Check that the referenced file exists.** Glob `ontology/domains/<directory>/objects/<Name>.md`. If the file does not exist, add an error:
+2. **Check that the referenced file exists.** Resolve the path relative to the file's location, then Glob the resulting `ontology/domains/<directory>/objects/<Name>.md`. If the file does not exist, add an error:
    ```
    [<domain_name>] <Type Kind> '<name>'
-     → <field>: "[[ontology/domains/<directory>/objects/<Name>|<Name>]]" — file not found.
+     → <field>: '<value>' — resolved file not found.
        Verify the Object Type name and domain directory are correct.
    ```
 
-3. **Check cross-domain dependency declaration.** If `<directory>` differs from the current domain's `directory`:
+3. **Check cross-domain dependency declaration.** If the resolved `<directory>` differs from the current domain's `directory`:
    - Look up the current domain's entry in `_index.yaml` and read its `dependency_direction` list.
    - If the referenced domain's **name** is not present in `dependency_direction`, add an error:
      ```

@@ -8,7 +8,7 @@
       "name": "ontologian",
       "source": "./plugin",
       "description": "Palantir ontology concepts (Object Type, Link Type, Action Type) for knowledge management in Claude Code",
-      "version": "1.7.0"
+      "version": "1.8.0"
     }
   ]
 }
